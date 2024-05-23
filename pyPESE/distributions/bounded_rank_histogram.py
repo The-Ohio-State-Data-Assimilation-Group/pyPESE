@@ -9,6 +9,9 @@
     maximum value.
 
 
+    IMPORTANT: ALL JUST-IN-TIME COMPILATION CAPABILITIES ARE TEMPORARILY DISABLED.
+
+
     List of functions defined here:
     --------------------------------
     1) fit_brh_dist
@@ -26,17 +29,13 @@
 
 
 import numpy as np
-from numba import njit
-from numba import float64 as nb_f64
-from numba.types import Tuple as nb_tuple
+# from numba import njit
+# from numba import float64 as nb_f64
+# from numba.types import Tuple as nb_tuple
 
 
 
-# Hardcoded GLOBAL options controlling BRH
-exterior_scaling = 0.1
-left_bound = None
-right_bound = None
-# will incorporate these options into BRH fitting procedure in the future.
+
 
 
 
@@ -69,7 +68,7 @@ class bounded_rank_histogram:
         return
 
     # Fit BRH distirbution to 1d data
-    def fit( self, data1d ):
+    def fit( self, data1d, exterior_scaling = 0.1, left_bound = None, right_bound = None ):
         # For each variable, fit BRH distribution
         self.brh_pts, self.brh_cdf = fit_brh_dist( data1d )
         return
@@ -127,7 +126,35 @@ class bounded_rank_histogram:
     1) data1d
         1D NumPy array containing data samples
 
+        
+    Optional Arguments (i.e., kwargs):
+    ----------------------------------
+    1) exterior_scaling (default value: 1.0)
+            Controls the probability assigned to the boxcar tails.
+            Probability assigned to one boxcar tail is:
+                exterior_scaling / number_of_samples
 
+    2) left_bound (default value: None)
+            Allows user to manually specify the left boundary of the BRH 
+            distribution's support.
+            If left_bound is set to None, the left boundary is:
+                minval - ( maxval - minval ) / number_of_samples
+            If left_bound is a float value and minval > left_bound, then the
+            left boundary is set to left_bound.
+            If minval < left_bound, the left boundary is set to:
+                minval - ( maxval - minval ) / number_of_samples
+    
+    3) right_bound (default value: None)
+            Allows users to manually specify the right boundary of the BRH
+            distribution's support.
+            If right_bound is set to None, the right boundary is:
+                maxval + ( maxval - minval ) / number_of_samples
+            If right_bound is a float value and maxval < right_bound, then the
+            right boundary is set to right_bound.
+            If maxval > right_bound, then the right boundary is set to:
+                maxval + ( maxval - minval ) / number_of_samples
+
+                
     Outputs:
     --------
     1) brh_pts
@@ -136,8 +163,8 @@ class bounded_rank_histogram:
     2) brh_cdf
             CDF values of the BRH distribution at locations brh_pts.
 '''
-@njit( nb_tuple((nb_f64[:], nb_f64[:]))( nb_f64[:] ) ) 
-def fit_brh_dist( data1d ): 
+# @njit( nb_tuple((nb_f64[:], nb_f64[:]))( nb_f64[:] ) ) 
+def fit_brh_dist( data1d, exterior_scaling = 0.1, left_bound = None, right_bound = None ): 
 
     # Number of data points
     nPts = len( data1d )
@@ -243,7 +270,7 @@ def fit_brh_dist( data1d ):
             BRH CDF values at locations brh_pts
 
 '''
-@njit( nb_f64[:](nb_f64[:],nb_f64[:],nb_f64[:])  )
+# @njit( nb_f64[:](nb_f64[:],nb_f64[:],nb_f64[:])  )
 def eval_brh_cdf( eval_pts, brh_pts, brh_cdf ):
 
     return np.interp( eval_pts, brh_pts, brh_cdf)
@@ -284,7 +311,7 @@ def eval_brh_cdf( eval_pts, brh_pts, brh_cdf ):
             BRH CDF values at locations brh_pts
 
 '''
-@njit( nb_f64[:](nb_f64[:],nb_f64[:],nb_f64[:])  )
+# @njit( nb_f64[:](nb_f64[:],nb_f64[:],nb_f64[:])  )
 def eval_brh_inv_cdf( eval_cdf, brh_pts, brh_cdf ):
     
     return np.interp( eval_cdf, brh_cdf, brh_pts )
@@ -324,7 +351,7 @@ def eval_brh_inv_cdf( eval_cdf, brh_pts, brh_cdf ):
     3) brh_cdf
             BRH CDF values at locations brh_pts
 '''
-@njit( nb_f64[:](nb_f64[:],nb_f64[:],nb_f64[:])  )
+# @njit( nb_f64[:](nb_f64[:],nb_f64[:],nb_f64[:])  )
 def eval_brh_pdf( eval_pts, brh_pts, brh_cdf ):
 
     # Interval used to estimate BRH PDF values
