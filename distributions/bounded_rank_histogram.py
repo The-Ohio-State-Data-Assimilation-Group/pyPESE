@@ -32,6 +32,15 @@ from numba.types import Tuple as nb_tuple
 
 
 
+# Hardcoded GLOBAL options controlling BRH
+exterior_scaling = 0.1
+left_bound = None
+right_bound = None
+
+
+
+
+
 
 
 
@@ -50,6 +59,7 @@ from numba.types import Tuple as nb_tuple
 
 '''
     SciPy-like class for BRH distribution.
+    This is a univariate bounded rank histogram distribution!!!
 '''
 class bounded_rank_histogram:
 
@@ -86,13 +96,6 @@ class bounded_rank_histogram:
 
 
 
-    
-
-
-
-
-
-
 
 
 
@@ -123,34 +126,6 @@ class bounded_rank_histogram:
     1) data1d
         1D NumPy array containing data samples
 
-        
-    Optional Arguments (i.e., kwargs):
-    ----------------------------------
-    1) exterior_scaling (default value: 1.0)
-            Controls the probability assigned to the boxcar tails.
-            Probability assigned to one boxcar tail is:
-                exterior_scaling / number_of_samples
-
-    2) left_bound (default value: None)
-            Allows user to manually specify the left boundary of the BRH 
-            distribution's support.
-            If left_bound is set to None, the left boundary is:
-                minval - ( maxval - minval ) / number_of_samples
-            If left_bound is a float value and minval > left_bound, then the
-            left boundary is set to left_bound.
-            If minval < left_bound, the left boundary is set to:
-                minval - ( maxval - minval ) / number_of_samples
-    
-    3) right_bound (default value: None)
-            Allows users to manually specify the right boundary of the BRH
-            distribution's support.
-            If right_bound is set to None, the right boundary is:
-                maxval + ( maxval - minval ) / number_of_samples
-            If right_bound is a float value and maxval < right_bound, then the
-            right boundary is set to right_bound.
-            If maxval > right_bound, then the right boundary is set to:
-                maxval + ( maxval - minval ) / number_of_samples
-
 
     Outputs:
     --------
@@ -165,11 +140,6 @@ def fit_brh_dist( data1d ):
 
     # Number of data points
     nPts = len( data1d )
-
-    # Hardcoded options
-    exterior_scaling = 0.1
-    left_bound = None
-    right_bound = None
 
     # Exterior scaling must be within (0,1].
     if ( exterior_scaling > 1 ) or ( exterior_scaling <= 0 ):
@@ -223,31 +193,24 @@ def fit_brh_dist( data1d ):
 
 
 
+# @njit( nb_tuple( (nb_f64[:,::1],nb_f64[:,::1]) )(nb_f64[:,::1]) )
+# def multivariate_fit_brh( ens_data2d ):
 
+#     # Setup desirable structures
+#     nVar, nEns = ens_data2d.shape
+#     brh_pts2d = np.zeros( (nVar, nEns+2) )
+#     brh_cdf2d = np.zeros( (nVar, nEns+2) )
 
-
-
-
-
-
-
-
-
-
-
-@njit( nb_tuple( (nb_f64[:,::1],nb_f64[:,::1]) )(nb_f64[:,::1]) )
-def multivariate_fit_brh( ens_data2d ):
-
-    # Setup desirable structures
-    nVar, nEns = ens_data2d.shape
-    brh_pts2d = np.zeros( (nVar, nEns+2) )
-    brh_cdf2d = np.zeros( (nVar, nEns+2) )
-
-    # Loop over variables
-    for vv in range( ens_data2d.shape[0] ):
-        brh_pts2d[vv,:], brh_cdf2d[vv,:] = fit_brh_dist( ens_data2d[vv,:] )
+#     # Loop over variables
+#     for vv in range( ens_data2d.shape[0] ):
+#         brh_pts2d[vv,:], brh_cdf2d[vv,:] = fit_brh_dist( ens_data2d[vv,:] )
     
-    return brh_pts2d, brh_cdf2d
+#     return brh_pts2d, brh_cdf2d
+
+
+
+
+
 
 
 
@@ -283,7 +246,6 @@ def multivariate_fit_brh( ens_data2d ):
 def eval_brh_cdf( eval_pts, brh_pts, brh_cdf ):
 
     return np.interp( eval_pts, brh_pts, brh_cdf)
-
 
 
 
