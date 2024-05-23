@@ -1,24 +1,68 @@
 '''
-    FUNCTIONS RELATING TO COORDINATE TRANSFORMS
-    -------------------------------------------
+    BOUNDED RANK HISTOGRAM (BRH) DISTRIBUTION
+    =================================================================================
+    This is similar to Jeffrey Anderson's Bounded Normal Rank Histogram, except that
+    I am assigning box-car tails outside of the data range.
+
+    The width of the box-car tails is currently set to (maxval - minval) / num_data
+    where minval is the data sample's minimum value, and maxval is the data sample's 
+    maximum value.
+    
 '''
+
+
 import numpy as np
-from scipy.interpolate import interp1d
-from matplotlib import use as mpl_use
-mpl_use('agg')
-import matplotlib.pyplot as plt
-
 
 
 
 
 '''
-    Quantile transform via bounded rank histogram CDF
-    -------------------------------------------------
-    This is similar to Jeffrey Anderson's Bounded Normal Rank Histogram, 
-    except that I am assigning box-car distributions to the boundaries.
+    FUNCTION TO FIT BRH TO UNIVARIATE SAMPLES
+
+    
+    Mandatory Inputs:
+    -----------------
+    1) data1d
+        1D NumPy array containing data samples
+
+        
+    Optional Inputs (i.e., kwargs):
+    -------------------------------
+    1) exterior_scaling (default value: 1.0)
+        Controls the probability assigned to the boxcar tails.
+        Probability assigned to one boxcar tail is:
+            exterior_scaling / number_of_samples
+
+    2) left_bound (default value: None)
+        Allows user to manually specify the left boundary of the BRH 
+        distribution's support.
+        If left_bound is set to None, the left boundary is:
+            minval - ( maxval - minval ) / number_of_samples
+        If left_bound is a float value and minval > left_bound, then the
+        left boundary is set to left_bound.
+        If minval < left_bound, the left boundary is set to:
+            minval - ( maxval - minval ) / number_of_samples
+    
+    3) right_bound (default value: None)
+        Allows users to manually specify the right boundary of the BRH
+        distribution's support.
+        If right_bound is set to None, the right boundary is:
+            maxval + ( maxval - minval ) / number_of_samples
+        If right_bound is a float value and maxval < right_bound, then the
+        right boundary is set to right_bound.
+        If maxval > right_bound, then the right boundary is set to:
+            maxval + ( maxval - minval ) / number_of_samples
+
+
+    Outputs:
+    --------
+    1) brh_pts
+        Locations defining the piecewise linear CDF of the BRH distribution.
+    2) brh_cdf
+        CDF values of the BRH distribution at locations brh_pts.
 '''
-def fit_bounded_rank_histogram_cdf( data1d, exterior_scaling = 1.0, left_bound = None, right_bound = None ):
+
+def fit_bounded_rank_histogram( data1d, exterior_scaling = 1.0, left_bound = None, right_bound = None ):
 
     # Number of data points
     nPts = len( data1d )
@@ -74,7 +118,25 @@ def fit_bounded_rank_histogram_cdf( data1d, exterior_scaling = 1.0, left_bound =
 
 
 
+
+
+
+
+
+
+
+'''
+
+
+
+    Functions to perform sanity checks
+'''
+
 def visualize_brh_distribution( brh_pts, brh_cdf ):
+
+    from matplotlib import use as mpl_use
+    mpl_use('agg')
+    import matplotlib.pyplot as plt
 
     # Generate PDF
     many_pts = np.linspace( brh_pts[0], brh_pts[-1], 1001 )
@@ -95,24 +157,12 @@ def visualize_brh_distribution( brh_pts, brh_cdf ):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-if __name__ == '__main__':
+def demo_brh_distribution():
     
     # Plot out BRH CDF
     from scipy.stats import norm
-    samples = np.random.normal(size=1000)
-    brh_pts, brh_cdf = fit_bounded_rank_histogram_cdf( samples, exterior_scaling = 1.0, left_bound = None, right_bound = None )
+    samples = np.random.normal(size=50)
+    brh_pts, brh_cdf = fit_bounded_rank_histogram( samples, exterior_scaling = 0.1, left_bound = None, right_bound = None )
     fig, axs = visualize_brh_distribution( brh_pts, brh_cdf )
 
     # Overlay with actual CDF
@@ -122,4 +172,5 @@ if __name__ == '__main__':
     plt.savefig('visualize_brh.png')
     plt.close()
 
-    
+    return
+
