@@ -14,11 +14,6 @@
 '''
 
 import numpy as np
-from numba import njit
-
-
-
-
 
 
 
@@ -35,12 +30,13 @@ from numba import njit
     Inputs:
     1) N        -- Original ensemble size
     2) M        -- Number of additional members
+    3) rng_seed -- Random number generator seed
 
     Note that M must be greater than N!
 '''
-def compute_unlocalized_gaussian_resampling_coefficients( N, M, rng_seed=0 ):
+def compute_unlocalized_gaussian_resampling_coefficients( N, M, rng_seed ):
 
-    # Seed the NumPy random number generator -- useful for paralleization.
+    # Seed the NumPy random number generator -- useful for parallelization.
     np.random.seed(rng_seed)
 
     # Generating matrix of noise (Appendix B Step 1)
