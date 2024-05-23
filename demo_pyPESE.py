@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 from scipy.stats import skewnorm, gamma, norm
 
 # Import pyPESE's Gaussian resampling scheme
-from pyPESE.resampling.gaussian_resampling import fast_unlocalized_gaussian_resampling 
+from pyPESE.pese_gc import pese_gc
+# from pyPESE.resampling.gaussian_resampling import fast_unlocalized_gaussian_resampling 
 
 
 
@@ -43,43 +44,58 @@ original_ens[1,:] = skewnorm(-5).ppf( original_ens[1,:])
     Now apply PESE-GC!
 '''
 
-# Step 1: Fit distributions
-dist_list = [None, None]
-
-shape1, loc1, scale1 = gamma.fit( original_ens[0,:] )
-dist_list[0] = gamma( shape1, loc=loc1, scale=scale1)
-
-shape2, loc2, scale2 = skewnorm.fit( original_ens[1,:] )
-dist_list[1] = skewnorm( shape2, loc=loc2, scale=scale2 )
-# print( shape2)
-
-
-# Step 2: transform to probit space
-fcst_probits = np.zeros( (2, ens_size_original) )
-for i in range(2):
-    fcst_probits[i,:] = dist_list[i].cdf( original_ens[i,:] )
-    fcst_probits[i,:] = norm.ppf( fcst_probits[i,:] )
-    fcst_probits[i,:] -= np.mean( fcst_probits[i] )
-    fcst_probits[i,:] /= np.std( fcst_probits[i], ddof=1 )
+# Init list of distribution classes
+list_dist_classes = [gamma, skewnorm]
+virtual_ensemble = pese_gc( original_ens, list_dist_classes, ens_size_virtual, rng_seed=0 )
 
 
 
 
 
-# Step 3: fast gaussian resampling to cosntruct virtual probits
-virt_probits = fast_unlocalized_gaussian_resampling(
-    fcst_probits, ens_size_virtual, rng_seed = 0
-)
-
-print( np.cov( fcst_probits) )
-print( np.cov( virt_probits) )
 
 
-# Step 4: Invert the PPI transforms on the virtual probits
-virtual_ensemble = np.zeros( (2, ens_size_virtual) )
-for i in range(2):
-    virtual_ensemble[i,:] = norm.cdf( virt_probits[i,:] )
-    virtual_ensemble[i,:] = dist_list[i].ppf( virtual_ensemble[i,:] )
+
+# '''
+#     Now apply PESE-GC!
+# '''
+
+# # Step 1: Fit distributions
+# dist_list = [None, None]
+
+# shape1, loc1, scale1 = gamma.fit( original_ens[0,:] )
+# dist_list[0] = gamma( shape1, loc=loc1, scale=scale1)
+
+# shape2, loc2, scale2 = skewnorm.fit( original_ens[1,:] )
+# dist_list[1] = skewnorm( shape2, loc=loc2, scale=scale2 )
+# # print( shape2)
+
+
+# # Step 2: transform to probit space
+# fcst_probits = np.zeros( (2, ens_size_original) )
+# for i in range(2):
+#     fcst_probits[i,:] = dist_list[i].cdf( original_ens[i,:] )
+#     fcst_probits[i,:] = norm.ppf( fcst_probits[i,:] )
+#     fcst_probits[i,:] -= np.mean( fcst_probits[i] )
+#     fcst_probits[i,:] /= np.std( fcst_probits[i], ddof=1 )
+
+
+
+
+
+# # Step 3: fast gaussian resampling to cosntruct virtual probits
+# virt_probits = fast_unlocalized_gaussian_resampling(
+#     fcst_probits, ens_size_virtual, rng_seed = 0
+# )
+
+# print( np.cov( fcst_probits) )
+# print( np.cov( virt_probits) )
+
+
+# # Step 4: Invert the PPI transforms on the virtual probits
+# virtual_ensemble = np.zeros( (2, ens_size_virtual) )
+# for i in range(2):
+#     virtual_ensemble[i,:] = norm.cdf( virt_probits[i,:] )
+#     virtual_ensemble[i,:] = dist_list[i].ppf( virtual_ensemble[i,:] )
 
 
 
