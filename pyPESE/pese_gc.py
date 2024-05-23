@@ -10,11 +10,10 @@
 
 # Load standard Python packages
 import numpy as np
+from scipy.stats import norm
 
 # Load pyPESE's custom packages
-import distributions as dists
-import resampling as resam
-
+from pyPESE.resampling.gaussian_resampling import fast_unlocalized_gaussian_resampling
 
 
 
@@ -96,7 +95,7 @@ def pese_gc( fcst_ens_2d, list_of_dist_classes, num_virt_ens, rng_seed=0 ):
 
     # Step 3: Evoke fast Gaussian resampling
     # ---------------------------------------
-    virt_probit_2d = resam.gaussian_resampling.fast_unlocalized_gaussian_resampling( 
+    virt_probit_2d = fast_unlocalized_gaussian_resampling( 
         fcst_probit_2d, num_virt_ens, rng_seed = rng_seed 
     )
 
