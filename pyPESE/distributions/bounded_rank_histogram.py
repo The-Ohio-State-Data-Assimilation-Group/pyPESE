@@ -36,6 +36,7 @@ from numba.types import Tuple as nb_tuple
 exterior_scaling = 0.1
 left_bound = None
 right_bound = None
+# will incorporate these options into BRH fitting procedure in the future.
 
 
 
