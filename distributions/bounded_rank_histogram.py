@@ -26,6 +26,7 @@
 
 
 import numpy as np
+from numba import njit
 
 
 
@@ -93,7 +94,7 @@ import numpy as np
     2) brh_cdf
             CDF values of the BRH distribution at locations brh_pts.
 '''
-
+@njit
 def fit_brh_dist( data1d, exterior_scaling = 1.0, left_bound = None, right_bound = None ):
 
     # Number of data points
@@ -183,9 +184,10 @@ def fit_brh_dist( data1d, exterior_scaling = 1.0, left_bound = None, right_bound
             BRH CDF values at locations brh_pts
 
 '''
+@njit
 def eval_brh_cdf( eval_pts, brh_pts, brh_cdf ):
 
-    return np.interp( eval_pts, brh_pts, brh_cdf, left=0., right=1.)
+    return np.interp( eval_pts, brh_pts, brh_cdf)
 
 
 
@@ -224,6 +226,7 @@ def eval_brh_cdf( eval_pts, brh_pts, brh_cdf ):
             BRH CDF values at locations brh_pts
 
 '''
+@njit
 def eval_brh_inv_cdf( eval_cdf, brh_pts, brh_cdf ):
     
     return np.interp( eval_cdf, brh_cdf, brh_pts )
@@ -263,6 +266,7 @@ def eval_brh_inv_cdf( eval_cdf, brh_pts, brh_cdf ):
     3) brh_cdf
             BRH CDF values at locations brh_pts
 '''
+@njit
 def eval_brh_pdf( eval_pts, brh_pts, brh_cdf ):
 
     # Interval used to estimate BRH PDF values
