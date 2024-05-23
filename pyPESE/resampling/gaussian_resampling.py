@@ -5,7 +5,7 @@
     List of functions:
     ------------------
 
-    1) fast_gaussian_resampling
+    1) fast_unlocalized_gaussian_resampling
             Function to execute Gaussian resampling in the subspace spanned by the ensemble
             perturbations.
 
@@ -37,8 +37,8 @@ import numpy as np
 '''
     FUNCTION TO RESAMPLE ENSEMBLE VIA FAST GAUSSIAN RESAMPLING
 
-    The expanded ensemble will have the same covariance matrix and mean
-    vector as the original ensemble members.
+    The expanded ensemble will have the same covariance matrix and mean vector as the original 
+    ensemble members.
     This means that the resampling does not account for localization.
 
     
@@ -59,7 +59,7 @@ import numpy as np
             Gaussian resampling
 
 '''
-def fast_gaussian_resampling( original_ens2d, ens_size_virtual, rng_seed = 0 ):
+def fast_unlocalized_gaussian_resampling( original_ens2d, ens_size_virtual, rng_seed = 0 ):
 
     # Determine number of variables and original ensemble size
     num_variables, ens_size_original = original_ens2d.shape
