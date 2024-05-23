@@ -28,7 +28,6 @@ sqrt_probit_cov = np.matrix( np.linalg.cholesky( probit_cov ) )
 original_probits = np.matrix( sqrt_probit_cov ) * np.matrix( np.random.normal(size=(2,ens_size_original)))
 original_probits = np.array( original_probits)
 
-
 # Map from probit space to quantile space
 original_ens = norm.cdf( original_probits )
 
