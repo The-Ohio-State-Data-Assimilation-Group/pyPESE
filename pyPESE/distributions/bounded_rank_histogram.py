@@ -64,14 +64,16 @@ import numpy as np
 class bounded_rank_histogram:
 
     # Initialize 
-    def __init__( self ):
+    def __init__( self, brh_pts, brh_cdf ):
+        self.brh_pts = brh_pts
+        self.brh_cdf = brh_cdf
         return
 
     # Fit BRH distirbution to 1d data
-    def fit( self, data1d, exterior_scaling = 0.1, left_bound = None, right_bound = None ):
-        # For each variable, fit BRH distribution
-        self.brh_pts, self.brh_cdf = fit_brh_dist( data1d )
-        return
+    def fit( data1d, exterior_scaling = 0.1, left_bound = None, right_bound = None ):
+        # # For each variable, fit BRH distribution
+        # self.brh_pts, self.brh_cdf = fit_brh_dist( data1d )
+        return fit_brh_dist( data1d )
 
     # Function to evaluate CDF of fitted BRH. 
     def cdf(self, eval_pts):
@@ -461,8 +463,8 @@ if __name__ == '__main__':
     
     samples = np.random.normal(size=500)
 
-    brh_dist = bounded_rank_histogram() 
-    brh_dist.fit(samples)
+    brh_pts, brh_cdf = bounded_rank_histogram.fit(samples)
+    brh_dist = bounded_rank_histogram( brh_pts, brh_cdf)
     
     many_pts = np.linspace( -4,4, 1000 )
     pdf_vals = brh_dist.pdf( many_pts )
