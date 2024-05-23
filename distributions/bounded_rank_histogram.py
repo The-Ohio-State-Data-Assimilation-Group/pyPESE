@@ -89,7 +89,7 @@ class bounded_rank_histogram:
     def rvs( self, shape ):
         uniform_samples1d = np.random.uniform( size=np.prod(shape) )
         samples1d = ppf( uniform_samples1d )
-        return samples.reshape(shape)
+        return samples1d.reshape(shape)
     
 # ------ End of BRH distribution SciPy-like class
 
