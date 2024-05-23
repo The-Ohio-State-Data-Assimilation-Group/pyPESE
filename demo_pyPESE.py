@@ -17,7 +17,7 @@ from scipy.stats import skewnorm, gamma, norm
 # Import PESE-GC function from pyPESE
 from pyPESE.pese_gc import pese_gc
 
-# Import custom-made distribution (in pyPESE package)
+# Import custom-made non-parametric distribution (in pyPESE package)
 from pyPESE.distributions.bounded_rank_histogram import bounded_rank_histogram
 
 
