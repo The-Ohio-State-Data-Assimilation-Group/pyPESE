@@ -35,10 +35,90 @@ import numpy as np
 
 
 
+'''
+    FUNCTION TO PREP TRANSFORMATION MATRIX NEEDED TO GENERATE RESAMPLING COEFFICIENTS
+    
+    The transformation matrix here refers to matrix L_E in Chan et al 2020 Monthly
+    Weather Review paper on Bi-Gaussian EnKFs
+
+    This transformation matrix is a deterministic function of original ensemble size and virtual 
+    ensemble size.
+
+    Note: assumes that the number of virtual members is more than 2x the original ensemble size.
+
+    Mandatory Inputs:
+    -----------------
+    1) ens_size_original (scalar integer)
+            Original number of ensemble members
+
+    2) ens_size_virtual (scalar integer)
+            Number of virtual members to create
+    
+    Outputs:
+    --------
+    1) transform_matrix ( ens_size_original x ens_size_virtual float matrix)
+            Transformation matrix used to construct Gaussian resampling coefficients
+        
+'''
+def prep_transform_matrix_for_gaussian_coefficients( ens_size_original, ens_size_virtual ):
+
+    # Rename variables to use a different notation.
+    N = ens_size_original
+    M = ens_size_virtual
+
+    # Appendix B Step 5
+    k = np.sqrt( 
+                ( M+N-1. )/(N-1.)
+                )
+    C_E = np.eye(N)* M/(N-1.)
+    C_E -= (k-1)**2/M
+    L_E = np.matrix(np.linalg.cholesky( C_E ))
+
+    return L_E
 
 
 
 
+
+
+
+
+
+
+'''
+    FUNCTION TO 
+'''
+
+
+
+
+
+
+
+
+
+'''
+    FUNCTION TO DRAW RESCALED WHITE NOISE THAT GUARENTEES PERFECT GAUSSIAN RESAMPLING COEFFICIENTS
+    
+    The transformation matrix here refers to matrix L_E in Chan et al 2020 Monthly
+    Weather Review paper on Bi-Gaussian EnKFs
+
+    Note: assumes that the number of virtual members is more than 2x the original ensemble size.
+
+    Mandatory Inputs:
+    -----------------
+    1) ens_size_original (scalar integer)
+            Original number of ensemble members
+
+    2) ens_size_virtual (scalar integer)
+            Number of virtual members to create
+    
+    Outputs:
+    --------
+    1) transform_matrix ( ens_size_original x ens_size_virtual float matrix)
+            Transformation matrix used to construct Gaussian resampling coefficients
+        
+'''
 
 
 
@@ -161,21 +241,21 @@ if __name__ == '__main__':
 
     print( np.cov( original_ens[10:12] ))
 
-    resampling_matrix = compute_unlocalized_gaussian_resampling_coefficients( 10, 20000 )
+    resampling_matrix = compute_unlocalized_gaussian_resampling_coefficients( 10, 20 )
 
-    expanded_ens = np.zeros( (100,10+20000) ) 
+    expanded_ens = np.zeros( (100,10+20) ) 
     expanded_ens[:,:10] = original_ens
     expanded_ens[:,10:] = ( ( np.matrix( original_perts ) * np.matrix( resampling_matrix ) ).T + original_mean ).T
 
     print('')
     print( np.cov( expanded_ens[10:12] ))
 
-    resampling_matrix = IID_compute_unlocalized_gaussian_resampling_coefficients( 10, 20000 )
+    resampling_matrix = IID_compute_unlocalized_gaussian_resampling_coefficients( 10, 20 )
     expanded_ens[:,:10] = original_ens
     expanded_ens[:,10:] = ( ( np.matrix( original_perts ) * np.matrix( resampling_matrix ) ).T + original_mean ).T
     
     print('')
-    print( np.cov( expanded_ens[10:12] ))
+    print( np.cov( expanded_ens[10:12] ) )
 
 
     
