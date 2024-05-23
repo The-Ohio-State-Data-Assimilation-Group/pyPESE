@@ -19,10 +19,30 @@
     3) eval_brh_inv_cdf
             Evaluates the inverse CDF of the bounded rank histogram distribution
             Note: Must first fit the BRH distribution
+    4) eval_brh_pdf
+            Evaluates the PDF of the bounded rank histogram distribution
+            Note: Must first fit the BRH distribution
 '''
 
 
 import numpy as np
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -135,6 +155,19 @@ def fit_brh_dist( data1d, exterior_scaling = 1.0, left_bound = None, right_bound
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 '''
     FUNCTION TO EVALUATE BRH CDF
 
@@ -153,6 +186,18 @@ def fit_brh_dist( data1d, exterior_scaling = 1.0, left_bound = None, right_bound
 def eval_brh_cdf( eval_pts, brh_pts, brh_cdf ):
 
     return np.interp( eval_pts, brh_pts, brh_cdf, left=0., right=1.)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -182,6 +227,19 @@ def eval_brh_cdf( eval_pts, brh_pts, brh_cdf ):
 def eval_brh_inv_cdf( eval_cdf, brh_pts, brh_cdf ):
     
     return np.interp( eval_cdf, brh_cdf, brh_pts )
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -221,6 +279,8 @@ def eval_brh_pdf( eval_pts, brh_pts, brh_cdf ):
     # Evaluate PDF via centered difference
     return (right_cdf - left_cdf) / interval
 
+
+
     
 
 
@@ -258,10 +318,25 @@ def eval_brh_pdf( eval_pts, brh_pts, brh_cdf ):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 '''
-
-
-
     Functions to perform sanity checks
 '''
 
