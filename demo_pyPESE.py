@@ -26,8 +26,8 @@ from pyPESE.distributions.bounded_rank_histogram import bounded_rank_histogram
     Draw bivariate samples representing original ensemble
 '''
 
+# Number of original ensemble members
 ens_size_original = 100
-ens_size_virtual  = 1000
 
 # Generate samples from Gaussian copula
 probit_cov = np.matrix([ [1,0.9], [0.9,1]])
@@ -49,6 +49,9 @@ original_ens[1,:] = skewnorm(-10).ppf( original_ens[1,:])
 '''
     TWO EXAMPLES OF APPLYING PESE-GC
 '''
+
+# Number of virtual members to create
+ens_size_virtual  = 1000
 
 # Example 1: Employ user-informed distributions
 # ---------------------------------------------
