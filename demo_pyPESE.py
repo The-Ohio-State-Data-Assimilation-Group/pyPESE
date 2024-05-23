@@ -1,5 +1,10 @@
 '''
-    QUICK AND DIRTY SCRIPT TO TEST OUT PYPESE FUNCTIONS
+    SCRIPT TO DEMONSTRATE PROBIT-SPACE ENSEMBLE SIZE EXPANSION PYTHON PACKAGE
+    =========================================================================
+
+    Type of pyPESE algorithm demonstrated: 
+        PESE for Gaussian Copulas (PESE-GC)
+
 '''
 
 # Standard packages
@@ -9,8 +14,10 @@ mpl_use('agg')
 import matplotlib.pyplot as plt
 from scipy.stats import skewnorm, gamma, norm
 
-# Import pyPESE's Gaussian resampling scheme
+# Import PESE-GC function from pyPESE
 from pyPESE.pese_gc import pese_gc
+
+# Import custom-made distribution (in pyPESE package)
 from pyPESE.distributions.bounded_rank_histogram import bounded_rank_histogram
 
 
@@ -56,7 +63,6 @@ list_dist_classes = [bounded_rank_histogram, bounded_rank_histogram]
 virtual_ensemble2 = pese_gc( original_ens, list_dist_classes, ens_size_virtual, rng_seed=0 )
 
 
-
 # Plot both examples
 # -------------------
 fig, axs = plt.subplots( ncols=1, nrows=2, figsize=(6,6) )
@@ -69,7 +75,6 @@ axs[0].scatter( virtual_ensemble1[0,:], virtual_ensemble1[1,:], c='r',
 axs[0].set_title('Example 1: User-informed distributions used', loc='left')
 axs[0].legend()
 
-
 # Plot out example 2
 axs[1].scatter( original_ens[0,:], original_ens[1,:], c='dodgerblue', 
              marker='o', label = 'Original Ensemble', s=50)
@@ -77,7 +82,6 @@ axs[1].scatter( virtual_ensemble2[0,:], virtual_ensemble2[1,:], c='r',
              marker='o', label = 'Virtual Ensemble', s = 1)
 axs[1].set_title('Example 2: Non-parametric distributions used', loc='left')
 axs[1].legend()
-
 
 # Make plots pretty
 for i in range(2):
