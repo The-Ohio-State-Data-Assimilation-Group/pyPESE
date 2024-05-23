@@ -336,42 +336,54 @@ def eval_brh_pdf( eval_pts, brh_pts, brh_cdf ):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 '''
-    Functions to perform sanity checks
+    SANITY CHECKS
 '''
 
-def visualize_brh_distribution( brh_pts, brh_cdf ):
+if __name__ == '__main__':
 
     from matplotlib import use as mpl_use
     mpl_use('agg')
     import matplotlib.pyplot as plt
+    from scipy.stats import norm
+    
+    samples = np.random.normal(size=500)
+    brh_pts, brh_cdf = fit_brh_dist( samples, exterior_scaling = 0.1, left_bound = None, right_bound = None )
 
     # Generate PDF
-    many_pts = np.linspace( brh_pts[0], brh_pts[-1], 1001 )
-    dx = many_pts[1] - many_pts[0]
-    many_cdf = np.interp( many_pts, brh_pts, brh_cdf )
-    pdf_pts = ( many_pts[1:] + many_pts[:-1] )/2.
-    pdf_val = (many_cdf[1:] - many_cdf[:-1])/dx
+    many_pts = np.linspace( brh_pts[0], brh_pts[-1], 1000 )
+    pdf_vals = eval_brh_pdf( many_pts, brh_pts, brh_cdf)
+
 
     # Plot PDF and CDF
     fig, axs = plt.subplots( nrows=1, ncols=2, figsize = (6,3) )
-    axs[0].plot( pdf_pts, pdf_val, '-r')
+    axs[0].plot( many_pts, pdf_vals, '-r')
     axs[0].set_title('BRH PDF')
     axs[1].plot( brh_pts, brh_cdf, '-r')
     axs[1].set_title('BRH CDF')
-    
-    
-    return fig, axs
-
-
-
-def demo_brh_distribution():
-    
-    # Plot out BRH CDF
-    from scipy.stats import norm
-    samples = np.random.normal(size=50)
-    brh_pts, brh_cdf = fit_bounded_rank_histogram( samples, exterior_scaling = 0.1, left_bound = None, right_bound = None )
-    fig, axs = visualize_brh_distribution( brh_pts, brh_cdf )
 
     # Overlay with actual CDF
     cdf_check_pts = np.linspace(brh_pts[0], brh_pts[-1], 1001)
@@ -379,6 +391,3 @@ def demo_brh_distribution():
     axs[1].plot( cdf_check_pts, gaussian_cdf, ':k' )
     plt.savefig('visualize_brh.png')
     plt.close()
-
-    return
-
