@@ -20,7 +20,7 @@ import resampling as resam
 
 
 '''
-    MAIN FUNCTION TO EVOKE PESE-GC
+    MAIN FUNCTION TO EVOKE PESE-GC WITHOUT LOCALIZATION
 
     
     Mandatory Inputs:
