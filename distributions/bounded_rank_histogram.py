@@ -27,6 +27,72 @@
 
 import numpy as np
 from numba import njit
+from numba import float64 as nb_f64
+from numba.types import Tuple as nb_tuple
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+    SciPy-like class for BRH distribution.
+'''
+class bounded_rank_histogram:
+
+    # Initialize 
+    def __init__( self ):
+        return
+
+    # Fit BRH distirbution to 1d data
+    def fit( self, data1d ):
+        # For each variable, fit BRH distribution
+        self.brh_pts, self.brh_cdf = fit_brh_dist( data1d )
+        return
+
+    # Function to evaluate CDF of fitted BRH. 
+    def cdf(self, eval_pts):
+        return eval_brh_cdf( eval_pts, self.brh_pts, self.brh_cdf )
+
+    # Function to evaluate inverse CDF of fitted BRH
+    def ppf(self, eval_cdf):
+        return eval_brh_inv_cdf( eval_cdf, self.brh_pts, self.brh_cdf )
+    
+    # Function to evaluate PDF of fitted BRH
+    def pdf( self, eval_pts ):
+        return eval_brh_pdf( eval_pts, self.brh_pts, self.brh_cdf )
+        
+    # Function to draw samples consistent with fitted BRH
+    def rvs( self, shape ):
+        uniform_samples1d = np.random.uniform( size=np.prod(shape) )
+        samples1d = ppf( uniform_samples1d )
+        return samples.reshape(shape)
+    
+# ------ End of BRH distribution SciPy-like class
+
+
+
+
+    
+
+
+
+
+
+
 
 
 
@@ -94,11 +160,16 @@ from numba import njit
     2) brh_cdf
             CDF values of the BRH distribution at locations brh_pts.
 '''
-@njit
-def fit_brh_dist( data1d, exterior_scaling = 1.0, left_bound = None, right_bound = None ):
+@njit( nb_tuple((nb_f64[:], nb_f64[:]))( nb_f64[:] ) ) 
+def fit_brh_dist( data1d ): 
 
     # Number of data points
     nPts = len( data1d )
+
+    # Hardcoded options
+    exterior_scaling = 0.1
+    left_bound = None
+    right_bound = None
 
     # Exterior scaling must be within (0,1].
     if ( exterior_scaling > 1 ) or ( exterior_scaling <= 0 ):
@@ -164,6 +235,30 @@ def fit_brh_dist( data1d, exterior_scaling = 1.0, left_bound = None, right_bound
 
 
 
+@njit( nb_tuple( (nb_f64[:,::1],nb_f64[:,::1]) )(nb_f64[:,::1]) )
+def multivariate_fit_brh( ens_data2d ):
+
+    # Setup desirable structures
+    nVar, nEns = ens_data2d.shape
+    brh_pts2d = np.zeros( (nVar, nEns+2) )
+    brh_cdf2d = np.zeros( (nVar, nEns+2) )
+
+    # Loop over variables
+    for vv in range( ens_data2d.shape[0] ):
+        brh_pts2d[vv,:], brh_cdf2d[vv,:] = fit_brh_dist( ens_data2d[vv,:] )
+    
+    return brh_pts2d, brh_cdf2d
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -184,7 +279,7 @@ def fit_brh_dist( data1d, exterior_scaling = 1.0, left_bound = None, right_bound
             BRH CDF values at locations brh_pts
 
 '''
-@njit
+@njit( nb_f64[:](nb_f64[:],nb_f64[:],nb_f64[:])  )
 def eval_brh_cdf( eval_pts, brh_pts, brh_cdf ):
 
     return np.interp( eval_pts, brh_pts, brh_cdf)
@@ -226,7 +321,7 @@ def eval_brh_cdf( eval_pts, brh_pts, brh_cdf ):
             BRH CDF values at locations brh_pts
 
 '''
-@njit
+@njit( nb_f64[:](nb_f64[:],nb_f64[:],nb_f64[:])  )
 def eval_brh_inv_cdf( eval_cdf, brh_pts, brh_cdf ):
     
     return np.interp( eval_cdf, brh_cdf, brh_pts )
@@ -266,7 +361,7 @@ def eval_brh_inv_cdf( eval_cdf, brh_pts, brh_cdf ):
     3) brh_cdf
             BRH CDF values at locations brh_pts
 '''
-@njit
+@njit( nb_f64[:](nb_f64[:],nb_f64[:],nb_f64[:])  )
 def eval_brh_pdf( eval_pts, brh_pts, brh_cdf ):
 
     # Interval used to estimate BRH PDF values
@@ -375,23 +470,24 @@ if __name__ == '__main__':
     from scipy.stats import norm
     
     samples = np.random.normal(size=500)
-    brh_pts, brh_cdf = fit_brh_dist( samples, exterior_scaling = 0.1, left_bound = None, right_bound = None )
 
-    # Generate PDF
-    many_pts = np.linspace( brh_pts[0], brh_pts[-1], 1000 )
-    pdf_vals = eval_brh_pdf( many_pts, brh_pts, brh_cdf)
+    brh_dist = bounded_rank_histogram() 
+    brh_dist.fit(samples)
+    
+    many_pts = np.linspace( -4,4, 1000 )
+    pdf_vals = brh_dist.pdf( many_pts )
+    cdf_vals = brh_dist.cdf( many_pts )
 
 
     # Plot PDF and CDF
     fig, axs = plt.subplots( nrows=1, ncols=2, figsize = (6,3) )
     axs[0].plot( many_pts, pdf_vals, '-r')
     axs[0].set_title('BRH PDF')
-    axs[1].plot( brh_pts, brh_cdf, '-r')
+    axs[1].plot( many_pts, cdf_vals, '-r')
     axs[1].set_title('BRH CDF')
 
     # Overlay with actual CDF
-    cdf_check_pts = np.linspace(brh_pts[0], brh_pts[-1], 1001)
-    gaussian_cdf = norm.cdf( cdf_check_pts )
-    axs[1].plot( cdf_check_pts, gaussian_cdf, ':k' )
+    gaussian_cdf = norm.cdf( many_pts )
+    axs[1].plot( many_pts, gaussian_cdf, ':k' )
     plt.savefig('visualize_brh.png')
     plt.close()
