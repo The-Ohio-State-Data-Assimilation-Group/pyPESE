@@ -6,6 +6,7 @@
     List of functions:
     ------------------
     1) pese_gc
+            Function to call PESE-GC.
 '''
 
 # Load standard Python packages
@@ -13,7 +14,7 @@ import numpy as np
 from scipy.stats import norm
 
 # Load pyPESE's custom packages
-from pyPESE.resampling.gaussian_resampling import fast_unlocalized_gaussian_resampling
+from pyPESE.resampling.gaussian_resampling import compute_unlocalized_gaussian_resampling_coefficients
 
 
 
@@ -60,55 +61,44 @@ def pese_gc( fcst_ens_2d, list_of_dist_classes, num_virt_ens, rng_seed=0 ):
         quit()
 
 
-    # Step 1: Fit distributions
-    # -------------------------
-    list_of_fitted_dists = []
-    for ivar in range( num_variables ):
-        # Determine distribution parameters
-        params = list_of_dist_classes[ivar].fit( fcst_ens_2d[ivar,:])
-        # Specify parameters into distribution classes
-        list_of_fitted_dists.append(
-            list_of_dist_classes[ivar]( *params )
-        )
-    # --- End of loop over variables
-    
-
-    # Step 2: Transform forecast ensemble into probit space
-    # ------------------------------------------------------
-    fcst_probit_2d = np.zeros( (num_variables, num_fcst_ens) )
-
-    # Map from native space to quantile space
-    for ivar in range( num_variables ):
-        # Map to quantile space
-        fcst_probit_2d[ivar,:] = list_of_fitted_dists[ivar].cdf( fcst_ens_2d[ivar,:] )
-    # --- End of loop over variables
-    
-    # Map from quantile space to probit space
-    fcst_probit_2d[:,:] = norm.ppf( fcst_probit_2d )
-
-    # Enforcing zero mean and unity variance conditions
-    fcst_probit_2d[:,:] = ( 
-        ( fcst_probit_2d.T - np.mean( fcst_probit_2d, axis=1) ) 
-        / np.std( fcst_probit_2d, ddof=1, axis=1 )
-    ).T
-
-
-    # Step 3: Evoke fast Gaussian resampling
-    # ---------------------------------------
-    virt_probit_2d = fast_unlocalized_gaussian_resampling( 
-        fcst_probit_2d, num_virt_ens, rng_seed = rng_seed 
+    # Generate Gaussian resampling coefficient matrix
+    gauss_resamp_matrix = compute_unlocalized_gaussian_resampling_coefficients( 
+        num_fcst_ens, num_virt_ens, rng_seed=rng_seed 
     )
 
-    
-    # Step 4: Map virtual probits into native space
-    # ---------------------------------------------
 
-    # First, map to quantile space
-    virt_ens_2d = norm.cdf( virt_probit_2d )
+    # Init array to hold the virtual ensemble
+    virt_ens_2d = np.zeros( [num_variables, num_virt_ens] )
 
-    # Then, use fitted distributions to map from quantile space to native space
+    # Init array to hold fcst and virtual probits
+    fcst_probit = np.zeros( [1, num_fcst_ens] )
+
+
+    # For memory efficiency, only applying PESE-GC on one variable at a time.
     for ivar in range( num_variables ):
-        virt_ens_2d[ivar,:] = list_of_fitted_dists[ivar].ppf( virt_ens_2d[ivar,:] )
+
+        # Step 1: Fit distribution to fcst ensembel for selected variable
+        params = list_of_dist_classes[ivar].fit( fcst_ens_2d[ivar,:])
+        fitted_dist = list_of_dist_classes[ivar]( *params )
+
+        # Step 2: Transform forecast ensemble into probit space
+        fcst_probit[0,:] = norm.ppf( 
+            fitted_dist.cdf( fcst_ens_2d[ivar,:] )
+        )
+        fcst_probit -= np.mean(fcst_probit)
+        fcst_probit /= np.std( fcst_probit, ddof=1)
+
+        # Step 3: Apply fast Gaussian resampling
+        virt_probit = ( np.matmul( fcst_probit, gauss_resamp_matrix ) )
+
+        # Step 4: Invert PPI transforms on virtual probits
+        virt_ens_2d[ivar,:] = (
+            fitted_dist.ppf(
+                norm.cdf( virt_probit[0,:] )
+            )
+        )
+
+    # --- End of loop over variables
 
     
     return virt_ens_2d

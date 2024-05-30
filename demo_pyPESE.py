@@ -90,6 +90,7 @@ axs[1].legend()
 for i in range(2):
     axs[i].set_xlabel('Model variable 1')
     axs[i].set_ylabel('Model variable 2')
+    axs[i].set_xlim([0,12])
 
 
 fig.subplots_adjust( hspace=0.4)
