@@ -456,8 +456,9 @@ if __name__ == '__main__':
     from scipy.stats import norm
     
     # Draw some values
-    np.random.seed(0)
-    samples = norm.ppf( np.linspace( 0.01, 0.99, 11) )
+    # np.random.seed(0)
+    samples = norm.ppf( np.linspace( 0.01, 0.99, 11) )*2 + 2
+    print( np.mean(samples))
 
     # Set up some BRH
     brh_pts, brh_cdf = setup_brh_defining_cdf_vals( samples, -10, 10, 0.1, 0.1)
@@ -466,8 +467,13 @@ if __name__ == '__main__':
     plt.plot( brh_pts, brh_cdf, '-r')
     plt.savefig('tmp.png')
 
+    # Analytic mean of BRH
+    analytic_integ = eval_brh_mth_raw_moment(brh_pts, brh_cdf, 0)
+    analytic_avg = eval_brh_mth_raw_moment(brh_pts, brh_cdf, 1)
+    analytic_var = eval_brh_mth_raw_moment(brh_pts-analytic_avg, brh_cdf, 2)
 
-    # Estimate mean of BRH
-    integ = eval_brh_mth_raw_moment(brh_pts, brh_cdf, 0)
-    avg = eval_brh_mth_raw_moment(brh_pts, brh_cdf, 1)
-    print(integ, avg)
+    # Draw many many samples from brh
+    draws_from_brh = np.interp( np.random.uniform(size=100000), brh_cdf, brh_pts )
+
+    print( 'sampled avg ', np.mean(draws_from_brh), ' analytic avg ', analytic_avg)
+    print( 'sampled var ', np.var(draws_from_brh, ddof=1), ' analytic var ', analytic_var)
