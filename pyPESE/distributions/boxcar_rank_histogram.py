@@ -1,28 +1,26 @@
 '''
-    BOUNDED RANK HISTOGRAM (BRH) DISTRIBUTION
+    BOXCAR RANK HISTOGRAM (BRH) DISTRIBUTION
     =================================================================================
-    This is similar to Jeffrey Anderson's Bounded Normal Rank Histogram, except that
+    This is similar to Jeffrey Anderson's Gaussian-tailed Rank Histogram, except that
     I am assigning box-car tails outside of the data range.
 
     The widths and the probability masses of the box-car tails will be determined by
     moment-matching (this requires solving nonlinear equations)
 
-
-    IMPORTANT: ALL JUST-IN-TIME COMPILATION CAPABILITIES ARE TEMPORARILY DISABLED.
-
+    This BRH distribution will also handle degenerate samples
 
     List of functions defined here:
     --------------------------------
     1) fit_brh_dist
             Fits BRH distribution to univariate samples
     2) eval_brh_cdf
-            Evaluates the CDF of the bounded rank histogram distribution
+            Evaluates the CDF of the boxcar rank histogram distribution
             Note: Must first fit the BRH distribution
     3) eval_brh_inv_cdf
-            Evaluates the inverse CDF of the bounded rank histogram distribution
+            Evaluates the inverse CDF of the boxcar rank histogram distribution
             Note: Must first fit the BRH distribution
     4) eval_brh_pdf
-            Evaluates the PDF of the bounded rank histogram distribution
+            Evaluates the PDF of the boxcar rank histogram distribution
             Note: Must first fit the BRH distribution
 '''
 
@@ -53,7 +51,7 @@ import numpy as np
 
 
 '''
-    FUNCTION TO FIT BOUNDED RANK HISTOGRAM TO UNIVARIATE SAMPLES
+    FUNCTION TO FIT BOXCAR RANK HISTOGRAM TO UNIVARIATE SAMPLES
     
     This function uses a moment-matching scheme to ascertain the boxcar tail widths
     and boxcar tail probability masses.
@@ -61,37 +59,8 @@ import numpy as np
     
     Mandatory Arguments:
     -----------------
-    1) data1d
-        1D NumPy array containing data samples
-
-        
-    Optional Arguments (i.e., kwargs):
-    ----------------------------------
-    1) exterior_scaling (default value: 1.0)
-            Controls the probability assigned to the boxcar tails.
-            Probability assigned to one boxcar tail is:
-                exterior_scaling / number_of_samples
-
-    2) left_bound (default value: None)
-            Allows user to manually specify the left boundary of the BRH 
-            distribution's support.
-            If left_bound is set to None, the left boundary is:
-                minval - ( maxval - minval ) / number_of_samples
-            If left_bound is a float value and minval > left_bound, then the
-            left boundary is set to left_bound.
-            If minval < left_bound, the left boundary is set to:
-                minval - ( maxval - minval ) / number_of_samples
-    
-    3) right_bound (default value: None)
-            Allows users to manually specify the right boundary of the BRH
-            distribution's support.
-            If right_bound is set to None, the right boundary is:
-                maxval + ( maxval - minval ) / number_of_samples
-            If right_bound is a float value and maxval < right_bound, then the
-            right boundary is set to right_bound.
-            If maxval > right_bound, then the right boundary is set to:
-                maxval + ( maxval - minval ) / number_of_samples
-
+    1) raw_data1d
+            1D NumPy array containing data samples
                 
     Outputs:
     --------
@@ -102,57 +71,51 @@ import numpy as np
             CDF values of the BRH distribution at locations brh_pts.
 '''
 # @njit( nb_tuple((nb_f64[:], nb_f64[:]))( nb_f64[:] ) ) 
-def fit_brh_dist( data1d, exterior_scaling = 0.1, left_bound = None, right_bound = None ): 
+def fit_brh_dist( raw_data1d ): 
 
-    # Number of data points
-    nPts = len( data1d )
+    # Number of RAW data points
+    num_data = len( raw_data1d )
 
-    # Exterior scaling must be within (0,1].
-    if ( exterior_scaling > 1 ) or ( exterior_scaling <= 0 ):
-        print("ERROR: fit_brh_dist")
-        print("    Exterior scaling factor must be between 0 and 1.")
+    # Unbiased estimation of the first 3 central moments of the RAW data
+    moment1 = np.mean(raw_data1d)
+    moment2 = np.var( raw_data1d, ddof=1 )
+    moment3 = np.sum( np.power(raw_data1d - moment1, 3) ) * num_data / ( (num_data-1) * (num_data-2) )
+
+    # Map data to space where mean is zero
+    data1d = raw_data1d - moment1
+
+    # Determine unique data points
+    uniq_data1d = np.unique( data1d )
+    num_uniq_data = len( uniq_data1d )
+
+    # Seek degenerate data values -- this also determines the probability masses in BRH intervals
+    degen_count = np.ones( num_uniq_data, dtype = 'i4')
+    if ( num_uniq_data != num_data ):
+        for i, val in enumerate(uniq_data1d):
+            degen_count[i] = np.sum( data1d == val )
+        # --- End of loop search for degenerate data values
+    # --- End of check for degenerate data values
+     
 
 
-    # Probability alloted beyond the boundaries of data's min-max range
-    # (i.e., exterior zones). There are two exterior zones.
-    exterior_prob = ( 1. / nPts  ) * exterior_scaling
 
-    # Compute interior probability (i.e., probability within the range
-    # of the data's min-max)
-    internal_prob = 1. - 2.*exterior_prob
 
-    # Interval probability (i.e., probability assigned to each interval 
-    # between consecutive data points)
-    interval_prob = internal_prob / (nPts - 1.)
 
-    # Setup internal interval boundaries for the bounded rank histogram distribution
-    brh_pts = np.zeros( nPts + 2 )
-    brh_pts[1:-1] = np.sort(data1d)
-    minmax_interval = data1d.max() - data1d.min()
 
-    # Generate left boundary
-    if left_bound == None:
-        brh_pts[0]  = brh_pts[1] - minmax_interval/nPts
-    elif left_bound < data1d.min():
-        brh_pts[0] = left_bound 
-    else: 
-        brh_pts[0]  = brh_pts[1] - minmax_interval/nPts
+    # Set data average to 0 -- this is just a useful thing to do
+    data1d_avg0 = data1d - moment1
+
+    # Ascertain unique
+
+
     
-    # Generate right boundary
-    if right_bound == None:
-        brh_pts[-1]  = brh_pts[-2] + minmax_interval/nPts
-    elif right_bound > data1d.max():
-        brh_pts[-1] = right_bound 
-    else: 
-        brh_pts[-1]  = brh_pts[-2] + minmax_interval/nPts
 
 
-    # Evaluate BRH CDF at every bounding point
-    brh_cdf = np.zeros( nPts + 2 )
-    brh_cdf[1:-1] = np.arange(nPts) * interval_prob + exterior_prob
-    brh_cdf[-1] = 1.
 
     return brh_pts, brh_cdf
+
+
+
 
 
 
@@ -175,12 +138,22 @@ def fit_brh_dist( data1d, exterior_scaling = 0.1, left_bound = None, right_bound
 '''
 def eval_brh_mth_raw_moment( brh_pts, brh_cdf, mom_ord ):
 
-    # Number of intervals and points
-    num_samp = len(brh_pts) - 1
-    num_
+    # Number of intervals in BRH distribution
+    num_intervals = len(brh_pts) - 1
+    
+    # Compute width & probability masses alloted to each BRH interval
+    interval_masses = brh_cdf[1:] - brh_cdf[:-1]
+    interval_widths = brh_pts[1:] - brh_pts[:-1]
+
+    # Compute moment summand from each BRH interval
+    interval_moment_summand = (
+        np.power( brh_pts[1:], mom_ord + 1 ) - np.power( brh_pts[:-1], mom_ord + 1)
+    ) * interval_masses / (mom_ord + 1)
+
+    # Sum all interval moment summands to obtain raw moment
+    return np.sum( interval_moment_summand )
 
 
-    return mom_val
 
 
 
@@ -188,9 +161,32 @@ def eval_brh_mth_raw_moment( brh_pts, brh_cdf, mom_ord ):
 
 
 
+'''
+    FUNCTION TO SETUP BRH-DEFINING CDF VALUES
+
+    The BRH CDF is a continuous piecewise-linear function. This function is ENTIRELY
+    defined by (1) unique data values, (2) CDFs for unique data values, (3) number of 
+    unique value occurrences, (4) location where left tail ends, (5) probability mass
+    assigned to left tail, (6) location where right tail ends, and (7) probability mass
+    assigned to the right tail
+
+    Location where left tail ends is called "left boundary"
+    Location where right tail ends is called "right boundary"
+
+    CURRENT ASSUMES that left and right boundaries are outside the span of the unique data points
+'''
+def setup_brh_defining_cdf_vals( uniq_data1d, num_uniq_counts, left_bound, right_bound, left_tail_mass, right_tail_mass ):
 
 
+    # First, determine probability mass assigned to the span of the unique data points
+    interior_mass = 1. - (right_tail_mass + left_tail_mass)
+    
 
+    # Determine probability mass associated with each non-degenerate data point
+    mass_per_point = interior_mass / np.sum(num_uniq_counts)
+
+    # Generate BRH-defining locations
+    brh_vals = np.zeros( len(uniq_data1d) + 2 )
 
 
 
@@ -410,8 +406,8 @@ if __name__ == '__main__':
     
     samples = np.random.normal(size=500)
 
-    brh_pts, brh_cdf = bounded_rank_histogram.fit(samples)
-    brh_dist = bounded_rank_histogram( brh_pts, brh_cdf)
+    brh_pts, brh_cdf = boxcar_rank_histogram.fit(samples)
+    brh_dist = boxcar_rank_histogram( brh_pts, brh_cdf)
     
     many_pts = np.linspace( -4,4, 1000 )
     pdf_vals = brh_dist.pdf( many_pts )
