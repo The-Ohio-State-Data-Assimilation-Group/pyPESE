@@ -172,8 +172,7 @@ def eval_brh_mth_raw_moment( brh_pts, brh_cdf, mom_ord ):
 
     Location where left tail ends is called "left boundary"
     Location where right tail ends is called "right boundary"
-
-    CURRENT ASSUMES that left and right boundaries are outside the span of the unique data points
+    
 '''
 def setup_brh_defining_cdf_vals( uniq_data1d, num_uniq_counts, left_bound, right_bound, left_tail_mass, right_tail_mass ):
 
@@ -181,7 +180,6 @@ def setup_brh_defining_cdf_vals( uniq_data1d, num_uniq_counts, left_bound, right
     # First, determine probability mass assigned to the span of the unique data points
     interior_mass = 1. - (right_tail_mass + left_tail_mass)
     
-
     # Determine probability mass associated with each non-degenerate data point
     mass_per_point = interior_mass / np.sum(num_uniq_counts)
 
