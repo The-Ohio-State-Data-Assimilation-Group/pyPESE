@@ -52,74 +52,11 @@ import numpy as np
 
 
 
-
-
-
-
-'''
-    SciPy-like class for BRH distribution.
-    This is a univariate bounded rank histogram distribution!!!
-'''
-class bounded_rank_histogram:
-
-    # Initialize 
-    def __init__( self, brh_pts, brh_cdf ):
-        self.brh_pts = brh_pts
-        self.brh_cdf = brh_cdf
-        return
-
-    # Fit BRH distirbution to 1d data
-    def fit( data1d, exterior_scaling = 0.1, left_bound = None, right_bound = None ):
-        # # For each variable, fit BRH distribution
-        # self.brh_pts, self.brh_cdf = fit_brh_dist( data1d )
-        return fit_brh_dist( data1d )
-
-    # Function to evaluate CDF of fitted BRH. 
-    def cdf(self, eval_pts):
-        return eval_brh_cdf( eval_pts, self.brh_pts, self.brh_cdf )
-
-    # Function to evaluate inverse CDF of fitted BRH
-    def ppf(self, eval_cdf):
-        return eval_brh_inv_cdf( eval_cdf, self.brh_pts, self.brh_cdf )
-    
-    # Function to evaluate PDF of fitted BRH
-    def pdf( self, eval_pts ):
-        return eval_brh_pdf( eval_pts, self.brh_pts, self.brh_cdf )
-        
-    # Function to draw samples consistent with fitted BRH
-    def rvs( self, shape ):
-        uniform_samples1d = np.random.uniform( size=np.prod(shape) )
-        samples1d = ppf( uniform_samples1d )
-        return samples1d.reshape(shape)
-    
-# ------ End of BRH distribution SciPy-like class
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 '''
     FUNCTION TO FIT BOUNDED RANK HISTOGRAM TO UNIVARIATE SAMPLES
+    
+    This function uses a moment-matching scheme to ascertain the boxcar tail widths
+    and boxcar tail probability masses.
 
     
     Mandatory Arguments:
@@ -222,19 +159,30 @@ def fit_brh_dist( data1d, exterior_scaling = 0.1, left_bound = None, right_bound
 
 
 
-# @njit( nb_tuple( (nb_f64[:,::1],nb_f64[:,::1]) )(nb_f64[:,::1]) )
-# def multivariate_fit_brh( ens_data2d ):
 
-#     # Setup desirable structures
-#     nVar, nEns = ens_data2d.shape
-#     brh_pts2d = np.zeros( (nVar, nEns+2) )
-#     brh_cdf2d = np.zeros( (nVar, nEns+2) )
 
-#     # Loop over variables
-#     for vv in range( ens_data2d.shape[0] ):
-#         brh_pts2d[vv,:], brh_cdf2d[vv,:] = fit_brh_dist( ens_data2d[vv,:] )
-    
-#     return brh_pts2d, brh_cdf2d
+
+
+'''
+    FUNCTION TO EVALUATE M-TH RAW MOMENT OF BRH DISTRIBUTION
+
+    Mandatory Arguments:
+    1) brh_pts  -- Locations where BRH is defined
+    2) brh_cdf  -- CDF of BRH
+    3) mom_ord  -- Order of desired raw moment
+
+    This function is based on analytic theory of boxcar tail rank histogram
+'''
+def eval_brh_mth_raw_moment( brh_pts, brh_cdf, mom_ord ):
+
+    # Number of intervals and points
+    num_samp = len(brh_pts) - 1
+    num_
+
+
+    return mom_val
+
+
 
 
 
