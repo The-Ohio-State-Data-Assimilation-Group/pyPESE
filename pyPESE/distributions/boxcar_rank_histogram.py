@@ -184,17 +184,13 @@ def setup_brh_defining_cdf_vals( uniq_data1d, uniq_cnts1d, left_bound, right_bou
     mass_per_point = interior_mass / np.sum(uniq_cnts1d)
 
     # Determine unique data points that lie within two boundaries
-    flag_within_bnds = ( uniq_data1d > left_bound ) * (uniq_data1d < left_bound)
+    flag_within_bnds = ( uniq_data1d > left_bound ) * (uniq_data1d < right_bound)
     uniq_data_within_bnds = deepcopy( uniq_data1d[flag_within_bnds] )
     cnts_within_bnds = deepcopy( uniq_cnts1d[flag_within_bnds] )
 
     # Count number of data points that are either (a) on the left boundary or (b) left of the left boundary
     flag_outside_left = ( uniq_data1d <= left_bound )
     cnt_outside_left = np.sum( uniq_cnts1d[flag_outside_left] )
-
-    # Count number of data points that are either (a) on the right boundary or (b) right of the right boundary
-    flag_outside_right = ( uniq_data1d >= right_bound )
-    cnt_outside_right = np.sum( uniq_cnts1d[flag_outside_right] )
 
     # Locations at which BRH CDF values are defined
     brh_pts = np.zeros( len(uniq_data_within_bnds)+2, dtype=np.float64 )
@@ -434,18 +430,31 @@ if __name__ == '__main__':
     from scipy.stats import norm
     
     # Draw some values
-    samples = np.random.normal(size=5) 
+    np.random.seed(0)
+    samples = np.random.normal(size=10)
+    samples -= np.mean(samples)
+    samples /= np.std(samples)
 
     # Setup degenerate values
-    samples[-1] = samples[0]
+    samples[-1] = samples.min()
 
     # Unique values
     uniq_data, uniq_cnts = np.unique( samples, return_counts=True)
 
     # Setup BRH
-    brh_pts, brh_cdf = setup_brh_defining_cdf_vals( uniq_data, uniq_cnts, left_bound=1.2, right_bound=1.2, left_tail_mass=0.1, right_tail_mass=0.1 )
+    left_bound = -1
+    right_bound= 1
+    brh_pts, brh_cdf = setup_brh_defining_cdf_vals( uniq_data, uniq_cnts, left_bound, right_bound, left_tail_mass=0.1, right_tail_mass=0.1 )
+
+    print(brh_pts)
+    print( brh_cdf)
 
     # Plot out CDF!
-    plt.plot( brh_pts, brh_cdf, '-r')
-    plt.ylim([0,1])
+    plt.plot( brh_pts, brh_cdf, '-r', zorder=100)
+    plt.scatter( samples, samples * 0, marker='x', s=50, c='red')
+    plt.axvline( left_bound )
+    plt.axvline( right_bound )
+    plt.axhline( 0 )
+    plt.axhline( 1 )
+    # plt.ylim([0,1])
     plt.savefig('tmp.png')
