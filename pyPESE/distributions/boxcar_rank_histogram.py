@@ -27,9 +27,9 @@
 
 import numpy as np
 from copy import deepcopy
-# from numba import njit
-# from numba import float64 as nb_f64
-# from numba.types import Tuple as nb_tuple
+from numba import njit
+from numba import float64 as nb_f64
+from numba.types import Tuple as nb_tuple
 
 
 
@@ -51,72 +51,108 @@ from copy import deepcopy
 
 
 
-# '''
-#     FUNCTION TO FIT BOXCAR RANK HISTOGRAM TO UNIVARIATE SAMPLES
+'''
+    FUNCTION TO FIT BOXCAR RANK HISTOGRAM TO UNIVARIATE SAMPLES
     
-#     This function uses a moment-matching scheme to ascertain the boxcar tail widths
-#     and boxcar tail probability masses.
+    This function uses a moment-matching scheme to ascertain the boxcar tail widths
+    and boxcar tail probability masses.
+
+    CURRENTLY MATCHES MEAN AND VARIANCE
 
     
-#     Mandatory Arguments:
-#     -----------------
-#     1) raw_data1d
-#             1D NumPy array containing data samples
+    Mandatory Arguments:
+    -----------------
+    1) raw_data1d
+            1D NumPy array containing data samples
                 
-#     Outputs:
-#     --------
-#     1) brh_pts
-#             Locations defining the piecewise linear CDF of the BRH distribution.
+    Outputs:
+    --------
+    1) brh_pts
+            Locations defining the piecewise linear CDF of the BRH distribution.
 
-#     2) brh_cdf
-#             CDF values of the BRH distribution at locations brh_pts.
-# '''
-# # @njit( nb_tuple((nb_f64[:], nb_f64[:]))( nb_f64[:] ) ) 
-# def fit_brh_dist( raw_data1d ): 
+    2) brh_cdf
+            CDF values of the BRH distribution at locations brh_pts.
+'''
+# def fit_brh_dist( raw_data1d ):
 
 #     # Number of RAW data points
 #     num_data = len( raw_data1d )
 
-#     # Unbiased estimation of the first 3 central moments of the RAW data
+#     # Unbiased estimation of the first 2 central moments of the RAW data
 #     moment1 = np.mean(raw_data1d)
-#     moment2 = np.var( raw_data1d, ddof=1 )
-#     moment3 = np.sum( np.power(raw_data1d - moment1, 3) ) * num_data / ( (num_data-1) * (num_data-2) )
+#     moment2 = np.var( raw_data1d, ddof=1 ) 
 
-#     # Map data to space where mean is zero
-#     data1d = raw_data1d - moment1
+#     # Sort data
+#     sorted1d = np.sort(raw_data1d)
 
-#     # Determine unique data points
-#     uniq_data1d = np.unique( data1d )
-#     num_uniq_data = len( uniq_data1d )
-
-#     # Seek degenerate data values -- this also determines the probability masses in BRH intervals
-#     degen_count = np.ones( num_uniq_data, dtype = 'i4')
-#     if ( num_uniq_data != num_data ):
-#         for i, val in enumerate(uniq_data1d):
-#             degen_count[i] = np.sum( data1d == val )
-#         # --- End of loop search for degenerate data values
-#     # --- End of check for degenerate data values
-     
+#     # Determine 
 
 
 
 
 
 
-#     # Set data average to 0 -- this is just a useful thing to do
-#     data1d_avg0 = data1d - moment1
-
-#     # Ascertain unique
-
-
-    
 
 
 
-#     return brh_pts, brh_cdf
 
 
 
+
+
+
+
+'''
+    FUNCTION TO SETUP BRH-DEFINING CDF VALUES
+
+    The BRH CDF is a continuous piecewise-linear function. 
+
+    ASSUMPTIONS:
+        1) All data values are unique
+        2) Left and right bounds fall outside of data span.
+
+        
+    Mandatory function arguments:
+    1) data1d
+            1D NumPy array holding ensemble values. Every value is assumed to be unique
+    2) left_bound
+            Scalar float value indicating the left boundary of the left boxcar tail
+    3) right_bound
+            Scalar float value indicating the right boundary of the right boxcar tail
+    4) left_tail_mass
+            Scalar float value indicating the probability mass assigned to the left boxcar tail
+    5) right_tail_mass
+            Scalar float value indicating the probability mass assigned to the right boxcar tail
+
+'''
+# @njit
+def setup_brh_defining_cdf_vals( data1d, left_bound, right_bound, left_tail_mass, right_tail_mass ):
+
+    # Sort data values
+    sorted_data1d = np.sort(data1d)
+
+    # Number of inter-sample intervals
+    num_interior_intervals = len(data1d)-1
+
+    # Probability assigned to each inter-sample interval
+    interior_mass = 1. - (right_tail_mass + left_tail_mass)
+    mass_per_interval = interior_mass / num_interior_intervals
+
+    # Setup CDF defining points
+    brh_pts = np.zeros( num_interior_intervals + 3, dtype=np.float64)
+    brh_pts[0] = left_bound
+    brh_pts[1:-1] = sorted_data1d
+    brh_pts[-1] = right_bound
+
+    # Setup CDF values
+    brh_cdf = np.zeros( num_interior_intervals + 3, dtype=np.float64)
+    brh_cdf[0] = 0
+    brh_cdf[1:-1] = mass_per_interval * np.arange(num_interior_intervals+1) + left_tail_mass
+    brh_cdf[-1] = brh_cdf[-2] + right_tail_mass
+    print( brh_cdf )
+
+    # Return BRH-defining values
+    return brh_pts, brh_cdf
 
 
 
@@ -145,79 +181,69 @@ def eval_brh_mth_raw_moment( brh_pts, brh_cdf, mom_ord ):
     # Compute width & probability masses alloted to each BRH interval
     interval_masses = brh_cdf[1:] - brh_cdf[:-1]
     interval_widths = brh_pts[1:] - brh_pts[:-1]
+    interval_density = interval_masses / interval_widths
 
     # Compute moment summand from each BRH interval
     interval_moment_summand = (
         np.power( brh_pts[1:], mom_ord + 1 ) - np.power( brh_pts[:-1], mom_ord + 1)
-    ) * interval_masses / (mom_ord + 1)
+    ) * interval_density / (mom_ord + 1) 
 
     # Sum all interval moment summands to obtain raw moment
     return np.sum( interval_moment_summand )
 
+        
 
 
 
+    
 
 
 
+    
 
 
-'''
-    FUNCTION TO SETUP BRH-DEFINING CDF VALUES
 
-    The BRH CDF is a continuous piecewise-linear function. This function is ENTIRELY
-    defined by (1) unique data values, (2) CDFs for unique data values, (3) number of 
-    unique value occurrences, (4) location where left tail ends, (5) probability mass
-    assigned to left tail, (6) location where right tail ends, and (7) probability mass
-    assigned to the right tail
-
-    Location where left tail ends is called "left boundary"
-    Location where right tail ends is called "right boundary"
-
-'''
-def setup_brh_defining_cdf_vals( uniq_data1d, uniq_cnts1d, left_bound, right_bound, left_tail_mass, right_tail_mass ):
-
-    # Determine interior probability mass (assuming boundaries are outside of uniq_data1d's span)
-    interior_mass = 1. - (right_tail_mass + left_tail_mass)
+    # # Determine interior probability mass (assuming boundaries are outside of uniq_data1d's span)
+    # interior_mass = 1. - (right_tail_mass + left_tail_mass)
   
-    # Determine empirical distribution probability mass associated with each non-degenerate data point
-    mass_per_point = interior_mass / np.sum(uniq_cnts1d)
+    # # Determine empirical distribution probability mass associated with each non-degenerate data point
+    # mass_per_point = interior_mass / np.sum(uniq_cnts1d)
 
-    # Determine unique data points that lie within two boundaries
-    flag_within_bnds = ( uniq_data1d > left_bound ) * (uniq_data1d < right_bound)
-    uniq_data_within_bnds = deepcopy( uniq_data1d[flag_within_bnds] )
-    cnts_within_bnds = deepcopy( uniq_cnts1d[flag_within_bnds] )
+    # # Determine unique data points that lie within two boundaries
+    # flag_within_bnds = ( uniq_data1d > left_bound ) * (uniq_data1d < right_bound)
+    # uniq_data_within_bnds = deepcopy( uniq_data1d[flag_within_bnds] )
+    # cnts_within_bnds = deepcopy( uniq_cnts1d[flag_within_bnds] )
 
-    # Count number of data points that are either (a) on the left boundary or (b) left of the left boundary
-    flag_outside_left = ( uniq_data1d <= left_bound )
-    cnt_outside_left = np.sum( uniq_cnts1d[flag_outside_left] )
+    # # Count number of data points that are either (a) on the left boundary or (b) left of the left boundary
+    # flag_outside_left = ( uniq_data1d <= left_bound )
+    # cnt_outside_left = np.sum( uniq_cnts1d[flag_outside_left] )
 
-    # Locations at which BRH CDF values are defined
-    brh_pts = np.zeros( len(uniq_data_within_bnds)+2, dtype=np.float64 )
-    brh_pts[0] = left_bound
-    brh_pts[1:-1] = uniq_data_within_bnds[:]
-    brh_pts[-1] = right_bound
+    # # Locations at which BRH CDF values are defined
+    # brh_pts = np.zeros( len(uniq_data_within_bnds)+2, dtype=np.float64 )
+    # brh_pts[0] = left_bound
+    # brh_pts[1:-1] = uniq_data_within_bnds[:]
+    # brh_pts[-1] = right_bound
 
-    # Initialize BRH CDF values
-    brh_cdf = np.zeros( len(brh_pts), dtype=np.float64)
+    # # Initialize BRH CDF values
+    # brh_cdf = np.zeros( len(brh_pts), dtype=np.float64)
     
-    # Leftmost BRH CDF value
-    brh_cdf[0] = cnt_outside_left * mass_per_point
+    # # Leftmost BRH CDF value
+    # brh_cdf[0] = cnt_outside_left * mass_per_point
 
-    # Accumulate CDF values within interior (left to right)
-    for i, cnt in enumerate( cnts_within_bnds ):
+    # # Accumulate CDF values within interior (left to right)
+    # for i, cnt in enumerate( cnts_within_bnds ):
 
-        # Accumulate probability mass
-        brh_cdf[i+1] = brh_cdf[i] + cnt * mass_per_point
+    #     # Accumulate probability mass
+    #     brh_cdf[i+1] = brh_cdf[i] + cnt * mass_per_point
 
-        # Special handling for the left tail mass
-        if i == 0:
-            brh_cdf[i+1] += left_tail_mass
+    #     # Special handling for the left tail mass
+    #     if i == 0:
+    #         brh_cdf[i+1] += left_tail_mass
     
-    # Final CDF value
-    brh_cdf[-1] = 1.
+    # # Final CDF value
+    # brh_cdf[-1] = 1.
 
-    return brh_pts, brh_cdf
+    # return brh_pts, brh_cdf
     
 
 
@@ -431,33 +457,17 @@ if __name__ == '__main__':
     
     # Draw some values
     np.random.seed(0)
-    samples = np.random.normal(size=10)
-    samples -= np.mean(samples)
-    samples /= np.std(samples)
+    samples = norm.ppf( np.linspace( 0.01, 0.99, 11) )
 
-    # Setup degenerate values
-    samples[-1] = samples.min()
+    # Set up some BRH
+    brh_pts, brh_cdf = setup_brh_defining_cdf_vals( samples, -10, 10, 0.1, 0.1)
 
-    # Unique values
-    uniq_data, uniq_cnts = np.unique( samples, return_counts=True)
-
-    # Setup BRH
-    left_bound = -1
-    right_bound= 1
-    brh_pts, brh_cdf = setup_brh_defining_cdf_vals( uniq_data, uniq_cnts, left_bound, right_bound, left_tail_mass=0.1, right_tail_mass=0.1 )
-
-    print(brh_pts)
-    print( brh_cdf)
-
-    # Plot out CDF!
-    plt.plot( brh_pts, brh_cdf, '-r', zorder=100)
-    for i, loc in enumerate(uniq_data):
-        print( i,loc, uniq_cnts[i])
-        plt.text( loc, 0, str(uniq_cnts[i]), color='red')
-    
-    plt.axvline( left_bound )
-    plt.axvline( right_bound )
-    plt.axhline( 0 )
-    plt.axhline( 1 )
-    plt.xlim([-2,2])
+    # Plot the BRH
+    plt.plot( brh_pts, brh_cdf, '-r')
     plt.savefig('tmp.png')
+
+
+    # Estimate mean of BRH
+    integ = eval_brh_mth_raw_moment(brh_pts, brh_cdf, 0)
+    avg = eval_brh_mth_raw_moment(brh_pts, brh_cdf, 1)
+    print(integ, avg)
