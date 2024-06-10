@@ -27,7 +27,7 @@
 
 import numpy as np
 from copy import deepcopy
-from scipy.optimize import fsolve
+from scipy.optimize import root
 from numba import njit
 from numba import float64 as nb_f64
 from numba.types import Tuple as nb_tuple
@@ -125,15 +125,23 @@ def fit_brh_dist( data1d ):
 
     # Solve for fitting parameters
     # ----------------------------
-    tail_width = np.sqrt( targetted_variance )/num_data
-    tail_mass = 0.
+    tail_width = np.sqrt( targetted_variance )
+    tail_mass = 1./num_data
     firstguess = np.array( [tail_width, tail_mass ])
-    soln = fsolve(
+    soln = root(
         brh_two_moment_fitting_vector_func, firstguess, 
-        args = (data1d, targetted_mean, targetted_variance)
+        args = (data1d, targetted_mean, targetted_variance),
+        options = {'maxiter':100}
     )
 
-    fitted_tail_width, fitted_tail_mass = soln
+    # Load the solution
+    fitted_tail_width, fitted_tail_mass = soln.x
+
+    # Use crudest solution if convergence failed.
+    if ( soln.success == False ):
+        fitted_tail_width = np.sqrt( targetted_variance )
+        fitted_tail_mass = 0
+    
 
     
     # Setup fitted BRH and return
