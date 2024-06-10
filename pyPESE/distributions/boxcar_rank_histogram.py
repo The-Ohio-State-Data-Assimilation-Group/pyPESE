@@ -451,10 +451,13 @@ if __name__ == '__main__':
 
     # Plot out CDF!
     plt.plot( brh_pts, brh_cdf, '-r', zorder=100)
-    plt.scatter( samples, samples * 0, marker='x', s=50, c='red')
+    for i, loc in enumerate(uniq_data):
+        print( i,loc, uniq_cnts[i])
+        plt.text( loc, 0, str(uniq_cnts[i]), color='red')
+    
     plt.axvline( left_bound )
     plt.axvline( right_bound )
     plt.axhline( 0 )
     plt.axhline( 1 )
-    # plt.ylim([0,1])
+    plt.xlim([-2,2])
     plt.savefig('tmp.png')
