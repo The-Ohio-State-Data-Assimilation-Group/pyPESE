@@ -30,6 +30,16 @@ from numba.types import Tuple as nb_tuple
 
 
 
+
+
+
+
+
+
+
+
+
+
 '''
     Function to preprocess ensemble to handle out-of-bounds values and duplicate values
 
@@ -122,6 +132,13 @@ def BBRH_preprocess_ens( input_ens1d, min_bound, max_bound ):
 
 
 
+
+
+
+
+
+
+
 '''
     Function to fit BBRH distribution to an ensemble via matching the first two moments
 
@@ -174,7 +191,6 @@ def BBRH_fit_dist_to_ens( input_ens1d, min_bound, max_bound ):
     # Exception case: tail masses must be positive semi-definite and the interior interval
     # mass must be positive definite
     if ( left_tail_mass < 0 or right_tail_mass < 0 or interior_interval_mass <= 0 ):
-        print('exception handling called')
         left_tail_mass          = 1./(ens_size +1)
         right_tail_mass         = 1./(ens_size +1)
         interior_interval_mass  = 1./(ens_size +1)
@@ -192,6 +208,12 @@ def BBRH_fit_dist_to_ens( input_ens1d, min_bound, max_bound ):
 
 
     
+
+
+
+
+
+
 
 
 
@@ -275,6 +297,125 @@ def BBRH_solve_moment_matching_equations( cdf_locs, ens_size, ens_moment1, ens_m
 
     
 
+
+
+
+
+
+
+
+'''
+    FUNCTION TO EVALUATE BBRH CDF
+
+    Mandatory Arguments:
+    --------------------
+    1) eval_pts
+            Locations to evaluate the BBRH CDF
+    
+    2) bbrh_pts
+            Locations defining the piecewise linear BBRH CDF
+    
+    3) bbrh_cdf
+            BBRH CDF values at locations bbrh_pts
+
+'''
+# @njit( nb_f64[:](nb_f64[:],nb_f64[:],nb_f64[:])  )
+def eval_bbrh_cdf( eval_pts, bbrh_pts, bbrh_cdf ):
+
+    return np.interp( eval_pts, bbrh_pts, bbrh_cdf )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+    FUNCTION TO EVALUATE BBRH QUANTILE FUNCTION
+    This function applies the inverse of the BBRH CDF.
+
+    Mandatory Arguments:
+    --------------------
+    1) eval_cdfs
+            Quantiles to apply the BBRH inverse CDF on.
+    
+    2) bbrh_pts
+            Locations defining the piecewise linear BBRH CDF
+    
+    3) bbrh_cdf
+            BBRH CDF values at locations bbrh_pts
+
+'''
+# @njit( nb_f64[:](nb_f64[:],nb_f64[:],nb_f64[:])  )
+def eval_bbrh_inv_cdf( eval_cdf, bbrh_pts, bbrh_cdf ):
+    
+    return np.interp( eval_cdf, bbrh_cdf, bbrh_pts )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+    FUNCTION TO EVALUATE BBRH PROBABILITY DENSITY FUNCTION (PDF)
+    This function uses the centered difference method on the BBRH CDF
+    to estimate the BBRH PDF at specified locations
+
+    Mandatory Arguments:
+    --------------------
+    1) eval_pts
+            Locations to evaluate the BBRH PDF 
+    
+    2) bbrh_pts
+            Locations defining the piecewise linear BBRH CDF
+    
+    3) bbrh_cdf
+            BBRH CDF values at locations bbrh_pts
+'''
+# @njit( nb_f64[:](nb_f64[:],nb_f64[:],nb_f64[:])  )
+def eval_bbrh_pdf( eval_pts, bbrh_pts, bbrh_cdf ):
+
+    # Interval used to estimate BRH PDF values
+    interval = (bbrh_pts[1:] - bbrh_pts[:-1]).min() * 1e-3
+
+    # Identify left and right points used to evaluate 
+    left_pts  = eval_pts - interval/2.
+    right_pts = eval_pts + interval/2.
+
+    # Evaluate CDF at left and right points
+    left_cdf  = eval_bbrh_cdf(  left_pts, bbrh_pts, bbrh_cdf )
+    right_cdf = eval_bbrh_cdf( right_pts, bbrh_pts, bbrh_cdf )
+
+    # Evaluate PDF via centered difference
+    return (right_cdf - left_cdf) / interval
 
 
 
