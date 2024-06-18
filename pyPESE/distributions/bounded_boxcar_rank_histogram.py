@@ -21,11 +21,10 @@
 
 import numpy as np
 from copy import deepcopy
-from scipy.optimize import root
 from numba import njit
 from numba import float64 as nb_f64
+from numba import float32 as nb_f32
 from numba.types import Tuple as nb_tuple
-
 
 
 
@@ -48,6 +47,7 @@ from numba.types import Tuple as nb_tuple
             1D NumPy array containing preprocessed ensemble
     
 '''
+@njit( nb_f64[:]( nb_f64[:], nb_f64, nb_f64 ) )
 def BBRH_preprocess_ens( input_ens1d, min_bound, max_bound ):
 
     # Sort ensemble values
@@ -117,3 +117,10 @@ def BBRH_preprocess_ens( input_ens1d, min_bound, max_bound ):
 
 
 
+
+
+
+
+'''
+    
+'''
