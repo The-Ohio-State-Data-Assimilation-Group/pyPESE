@@ -126,19 +126,22 @@ def fit_brh_dist( data1d ):
     # Solve for fitting parameters
     # ----------------------------
     tail_width = np.sqrt( targetted_variance )
-    tail_mass = 1./num_data
+    tail_mass = 0.
     firstguess = np.array( [tail_width, tail_mass ])
     soln = root(
         brh_two_moment_fitting_vector_func, firstguess, 
-        args = (data1d, targetted_mean, targetted_variance),
-        options = {'maxiter':100}
+        args = (data1d, targetted_mean, targetted_variance)
     )
 
     # Load the solution
     fitted_tail_width, fitted_tail_mass = soln.x
 
-    # Use crudest solution if convergence failed.
-    if ( soln.success == False ):
+    # Use crudest solution if convergence failed or weird solutions are outputted
+    if ( soln.success == False 
+            or fitted_tail_width < 0 
+            or fitted_tail_mass < 0 
+            or fitted_tail_mass > 0.5
+        ):
         fitted_tail_width = np.sqrt( targetted_variance )
         fitted_tail_mass = 0
     
