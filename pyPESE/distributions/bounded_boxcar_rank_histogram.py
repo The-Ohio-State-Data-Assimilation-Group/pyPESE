@@ -24,6 +24,7 @@ from copy import deepcopy
 from numba import njit
 from numba import float64 as nb_f64
 from numba import float32 as nb_f32
+from numba import int64 as nb_i64
 from numba.types import Tuple as nb_tuple
 
 
@@ -38,7 +39,7 @@ from numba.types import Tuple as nb_tuple
             1D NumPy array containing an ensemble of values for a forecast model variable
     2) min_bound
             User-specified scalar value indicating the left boundary of BBRH's support
-    2) max_bound
+    3) max_bound
             User-specified scalar value indicating the right boundary of BBRH's support
 
     Output:
@@ -47,7 +48,7 @@ from numba.types import Tuple as nb_tuple
             1D NumPy array containing preprocessed ensemble
     
 '''
-@njit( nb_f64[:]( nb_f64[:], nb_f64, nb_f64 ) )
+# @njit( nb_f64[:]( nb_f64[:], nb_f64, nb_f64 ) )
 def BBRH_preprocess_ens( input_ens1d, min_bound, max_bound ):
 
     # Sort ensemble values
@@ -78,7 +79,7 @@ def BBRH_preprocess_ens( input_ens1d, min_bound, max_bound ):
     # Handling duplicate values within the bounded ensemble
     # -----------------------------------------------------
     # Detect duplicates
-    uniq_vals, uniq_inds, uniq_inv_inds, uniq_cnts = np.unique_all( ens1d )
+    uniq_vals, uniq_cnts = np.unique( ens1d, return_counts=True )
     flags_duplicated_uniq_vals = uniq_cnts > 1
 
     # Reconstruct ensemble with all duplicates removed
@@ -98,13 +99,13 @@ def BBRH_preprocess_ens( input_ens1d, min_bound, max_bound ):
     # --------------------------------------
     # Handle overly small ensemble values by relocating them to the left boundary 
     # of the support, PLUS some offset
-    flags_oversmall = (ens1d < min_bound)
+    flags_oversmall = (ens1d <= min_bound)
     num_oversmall   = np.sum(flags_oversmall)
     ens1d[flags_oversmall] = min_bound + ( np.arange(num_oversmall)+1 ) * offset_val
 
     # Handle overly large ensemble values by relocating them to the right boundary
     # of the support, MINUS some offset
-    flags_overlarge = (ens1d > max_bound)
+    flags_overlarge = (ens1d >= max_bound)
     num_overlarge   = np.sum( flags_overlarge )
     ens1d[flags_overlarge] = max_bound - ( np.arange(num_overlarge)+1 )[::-1] * offset_val
     
@@ -122,5 +123,190 @@ def BBRH_preprocess_ens( input_ens1d, min_bound, max_bound ):
 
 
 '''
-    
+    Function to fit BBRH distribution to an ensemble via matching the first two moments
+
+    Mandatory arguments:
+    --------------------
+    1) input_ens1d
+            1D NumPy array containing an ensemble of values for a forecast model variable
+    2) min_bound
+            User-specified scalar value indicating the left boundary of BBRH's support
+    3) max_bound
+            User-specified scalar value indicating the right boundary of BBRH's support
+
+    Output:
+    -------
+    1) cdf_locs
+            1D NumPy array indicating locations where BBRH's CDF is defined.
+            Note that cdf_locs[1:-1] contains the preprocessed ensemble.
+    2) cdf_vals
+            1D NumPy array of BBRH CDF values at cdf_locs
+
+            
+    Additional note:
+        No Just-In-Time decorator because there are no loops inside this function
 '''
+def BBRH_fit_dist_to_ens( input_ens1d, min_bound, max_bound ):
+
+    # Ensemble size
+    ens_size = input_ens1d.shape[0]
+
+    # Determine first two moments of the ensemble
+    # -------------------------------------------
+    ens_moment1 = np.mean(          input_ens1d     )
+    ens_moment2 = np.mean( np.power(input_ens1d, 2) )
+
+
+    # Generate locations at which the BBRH CDF is defined
+    # ---------------------------------------------------
+    cdf_locs       = np.zeros( ens_size + 2, dtype='f8' )
+    cdf_locs[1:-1] = BBRH_preprocess_ens( input_ens1d, min_bound, max_bound )
+    cdf_locs[0]    = min_bound
+    cdf_locs[-1]   = max_bound
+
+
+    # Fit BBRH by solving a system of linear equations
+    # ------------------------------------------------
+    left_tail_mass, right_tail_mass, interior_interval_mass = (
+        BBRH_solve_moment_matching_equations( cdf_locs, ens_size, ens_moment1, ens_moment2 )
+    )
+
+    # Exception case: tail masses must be positive semi-definite and the interior interval
+    # mass must be positive definite
+    if ( left_tail_mass < 0 or right_tail_mass < 0 or interior_interval_mass <= 0 ):
+        print('exception handling called')
+        left_tail_mass          = 1./(ens_size +1)
+        right_tail_mass         = 1./(ens_size +1)
+        interior_interval_mass  = 1./(ens_size +1)
+    # ---- End of exception handling
+
+    # Construct CDF values
+    cdf_vals = np.zeros( ens_size+2, dtype='f8' )
+    cdf_vals[0] = 0.
+    cdf_vals[1:-1] = left_tail_mass + np.arange(ens_size ) * interior_interval_mass
+    cdf_vals[-1] = cdf_vals[-2] + right_tail_mass
+
+
+    return cdf_locs, cdf_vals
+
+
+
+    
+
+
+
+
+
+'''
+    Function to solve the system of equations to fit BBRH to a set of CDF locations.
+
+    See Bounded_Boxcar_Rank_Histogram_distribution_theory.jpg for those equations.
+    Note that this system of equations is a linear system.
+
+    Mandatory arguments:
+    --------------------
+    1) cdf_locs
+            1D NumPy array indicating locations where BBRH's CDF is defined.
+            Note that cdf_locs[1:-1] contains the preprocessed ensemble.
+
+    Output:
+    -------
+    1) alpha
+            Probability mass on the left-tail of the BBRH
+    2) beta
+            Probability mass on the right-tail of the BBRH
+    3) gamma
+            Probability mass in each interval in the span of the preprocessed ensemble.
+
+            
+    Additional note:
+        No Just-In-Time decorator because there are no loops inside this function
+'''
+# @njit( nb_tuple( nb_f64, nb_f64, nb_f64 )( nb_f64[:], nb_i64, nb_f64, nb_f64 ) )
+def BBRH_solve_moment_matching_equations( cdf_locs, ens_size, ens_moment1, ens_moment2 ):
+
+    # Construct system of linear equations for the moment matching process
+    # --------------------------------------------------------------------
+    # See Bounded_Boxcar_Rank_Histogram_distribution_theory.jpg for that system of equations
+
+    # Compute f_n values defined in Bounded_Boxcar_Rank_Histogram_distribution_theory.jpg
+    fn_vals = cdf_locs[1:] + cdf_locs[:-1]
+
+    # Compute g_n values defined in Bounded_Boxcar_Rank_Histogram_distribution_theory.jpg
+    gn_vals = np.power( cdf_locs[1:], 3) - np.power( cdf_locs[:-1], 3)
+    gn_vals /= ( cdf_locs[1:] - cdf_locs[:-1])
+
+    # Construct coefficient matrix for the system of equations. 
+    # Note that solution vector is [alpha, gamma, beta].T
+    coef_matrix = np.zeros( (3,3), dtype='f8' )
+
+    # Coefficients for the first moment equation
+    coef_matrix[0,0] = fn_vals[0] / 2
+    coef_matrix[0,1] = np.sum(fn_vals[1:-1])/2
+    coef_matrix[0,2] = fn_vals[-1] /2
+
+    # Coefficients for the second moment equation
+    coef_matrix[1,0] = gn_vals[0] / 3
+    coef_matrix[1,1] = np.sum(gn_vals[1:-1]) / 3
+    coef_matrix[1,2] = gn_vals[-1] / 3
+
+    # Coefficients for the probability mass equation
+    coef_matrix[2,0] = 1.
+    coef_matrix[2,1] = ens_size - 1.
+    coef_matrix[2,2] = 1.
+
+    # Vector of values on the right-hand-side of the system of linear equations
+    rhs_vec = np.matrix( np.zeros( (3,1), dtype='f8' ) )
+    rhs_vec[0] = ens_moment1
+    rhs_vec[1] = ens_moment2
+    rhs_vec[2] = 1.
+
+    # Compute values of alpha, beta and gamma
+    inv_coef_matrix = np.matrix( np.linalg.inv( coef_matrix ) )
+    soln_vec = inv_coef_matrix * rhs_vec
+    alpha = soln_vec[0,0]
+    gamma = soln_vec[1,0]
+    beta  = soln_vec[2,0]
+
+    return alpha, beta, gamma
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if __name__ == '__main__':
+
+    from matplotlib import use as mpl_use
+    mpl_use('agg')
+    import matplotlib.pyplot as plt
+
+    # Generate a test ensemble with degenerate values
+    np.random.seed(0)
+    raw_ens = np.random.normal( size=30 )
+    raw_ens[10:20] = 0.
+
+    # Generate BBRH distribution with nasty bounds
+    cdf_locs, cdf_vals = BBRH_fit_dist_to_ens( raw_ens, -1, 2. )
+
+    plt.plot( cdf_locs, cdf_vals )
+    plt.scatter( raw_ens, raw_ens*0-0.1, marker = 'x', s=20, c='r' )
+    plt.scatter( cdf_locs[1:-1], cdf_locs[1:-1]*0-0.2, marker = 'x', s=20, c='k' )
+    plt.savefig('test.png')
