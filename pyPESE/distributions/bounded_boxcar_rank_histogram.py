@@ -72,23 +72,23 @@ class bounded_boxcar_rank_histogram:
         # For each variable, fit BBRH distribution
         return BBRH_fit_dist_to_ens( data1d )
 
-    # Function to evaluate CDF of fitted BRH. 
-    def cdf(self, eval_pts):
-        return eval_brh_cdf( eval_pts, self.brh_pts, self.brh_cdf )
+    # # Function to evaluate CDF of fitted BRH. 
+    # def cdf(self, eval_pts):
+    #     return eval_brh_cdf( eval_pts, self.brh_pts, self.brh_cdf )
 
-    # Function to evaluate inverse CDF of fitted BRH
-    def ppf(self, eval_cdf):
-        return eval_brh_inv_cdf( eval_cdf, self.brh_pts, self.brh_cdf )
+    # # Function to evaluate inverse CDF of fitted BRH
+    # def ppf(self, eval_cdf):
+    #     return eval_brh_inv_cdf( eval_cdf, self.brh_pts, self.brh_cdf )
     
-    # Function to evaluate PDF of fitted BRH
-    def pdf( self, eval_pts ):
-        return eval_brh_pdf( eval_pts, self.brh_pts, self.brh_cdf )
+    # # Function to evaluate PDF of fitted BRH
+    # def pdf( self, eval_pts ):
+    #     return eval_brh_pdf( eval_pts, self.brh_pts, self.brh_cdf )
         
-    # Function to draw samples consistent with fitted BRH
-    def rvs( self, shape ):
-        uniform_samples1d = np.random.uniform( size=np.prod(shape) )
-        samples1d = eval_brh_inv_cdf( uniform_samples1d )
-        return samples1d.reshape(shape)
+    # # Function to draw samples consistent with fitted BRH
+    # def rvs( self, shape ):
+    #     uniform_samples1d = np.random.uniform( size=np.prod(shape) )
+    #     samples1d = eval_brh_inv_cdf( uniform_samples1d )
+    #     return samples1d.reshape(shape)
     
 # ------ End of BRH distribution SciPy-like class
 
