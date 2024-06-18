@@ -40,6 +40,176 @@ from numba.types import Tuple as nb_tuple
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+    SciPy-like class for BBRH distribution.
+    This is a univariate bounded rank histogram distribution!!!
+'''
+class bounded_boxcar_rank_histogram:
+
+    # Initialize 
+    def __init__( self, cdf_locs, cdf_vals, ens1d ):
+        self.cdf_locs = cdf_locs
+        self.cdf_vals = cdf_vals
+        self.ens1d = ens1d
+        return
+
+
+    # Preprocess ensemble to get rid of duplicate values and out-of-bounds
+    # values
+    def preprocess_ens( ens1d, min_bound, max_bound ):
+        return BBRH_preprocess_ens( input_ens1d, min_bound, max_bound )
+
+
+    # Fit BBRH distirbution to 1d data
+    def fit( data1d ):
+        # For each variable, fit BBRH distribution
+        return BBRH_fit_dist_to_ens( data1d )
+
+    # Function to evaluate CDF of fitted BRH. 
+    def cdf(self, eval_pts):
+        return eval_brh_cdf( eval_pts, self.brh_pts, self.brh_cdf )
+
+    # Function to evaluate inverse CDF of fitted BRH
+    def ppf(self, eval_cdf):
+        return eval_brh_inv_cdf( eval_cdf, self.brh_pts, self.brh_cdf )
+    
+    # Function to evaluate PDF of fitted BRH
+    def pdf( self, eval_pts ):
+        return eval_brh_pdf( eval_pts, self.brh_pts, self.brh_cdf )
+        
+    # Function to draw samples consistent with fitted BRH
+    def rvs( self, shape ):
+        uniform_samples1d = np.random.uniform( size=np.prod(shape) )
+        samples1d = eval_brh_inv_cdf( uniform_samples1d )
+        return samples1d.reshape(shape)
+    
+# ------ End of BRH distribution SciPy-like class
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+    Function to fit BBRH distribution to an ensemble via matching the first two moments
+
+    Mandatory arguments:
+    --------------------
+    1) input_ens1d
+            1D NumPy array containing an ensemble of values for a forecast model variable
+    2) min_bound
+            User-specified scalar value indicating the left boundary of BBRH's support
+    3) max_bound
+            User-specified scalar value indicating the right boundary of BBRH's support
+
+    Output:
+    -------
+    1) cdf_locs
+            1D NumPy array indicating locations where BBRH's CDF is defined.
+            Note that cdf_locs[1:-1] contains the preprocessed ensemble.
+    2) cdf_vals
+            1D NumPy array of BBRH CDF values at cdf_locs
+    3) ens1d
+            1D NumPy array containing preprocessed ensemble (NOT SORTED)
+
+            
+    Additional note:
+        No Just-In-Time decorator because there are no loops inside this function
+'''
+def BBRH_fit_dist_to_ens( input_ens1d, min_bound, max_bound ):
+
+    # Ensemble size
+    ens_size = input_ens1d.shape[0]
+
+    # Determine first two moments of the ensemble
+    # -------------------------------------------
+    ens_moment1 = np.mean(          input_ens1d     )
+    ens_moment2 = np.mean( np.power(input_ens1d, 2) )
+
+
+    # Preprocess ensemble
+    # -------------------
+    ens1d = BBRH_preprocess_ens( input_ens1d, min_bound, max_bound )
+
+
+    # Generate locations at which the BBRH CDF is defined
+    # ---------------------------------------------------
+    cdf_locs       = np.zeros( ens_size + 2, dtype='f8' )
+    cdf_locs[1:-1] = np.sort(ens1d)
+    cdf_locs[0]    = min_bound
+    cdf_locs[-1]   = max_bound
+
+
+    # Fit BBRH by solving a system of linear equations
+    # ------------------------------------------------
+    left_tail_mass, right_tail_mass, interior_interval_mass = (
+        BBRH_solve_moment_matching_equations( cdf_locs, ens_size, ens_moment1, ens_moment2 )
+    )
+
+    # Exception case: tail masses must be positive semi-definite and the interior interval
+    # mass must be positive definite
+    if ( left_tail_mass < 0 or right_tail_mass < 0 or interior_interval_mass <= 0 ):
+        left_tail_mass          = 1./(ens_size +1)
+        right_tail_mass         = 1./(ens_size +1)
+        interior_interval_mass  = 1./(ens_size +1)
+    # ---- End of exception handling
+
+    # Construct CDF values
+    cdf_vals = np.zeros( ens_size+2, dtype='f8' )
+    cdf_vals[0] = 0.
+    cdf_vals[1:-1] = left_tail_mass + np.arange(ens_size ) * interior_interval_mass
+    cdf_vals[-1] = cdf_vals[-2] + right_tail_mass
+
+
+    return cdf_locs, cdf_vals, ens1d
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 '''
     Function to preprocess ensemble to handle out-of-bounds values and duplicate values
 
@@ -55,7 +225,7 @@ from numba.types import Tuple as nb_tuple
     Output:
     -------
     1) ens1d
-            1D NumPy array containing preprocessed ensemble
+            1D NumPy array containing preprocessed ensemble (NOT SORTED!!!)
     
 '''
 # @njit( nb_f64[:]( nb_f64[:], nb_f64, nb_f64 ) )
@@ -67,6 +237,11 @@ def BBRH_preprocess_ens( input_ens1d, min_bound, max_bound ):
     # an internal copy of the ensemble of values is generated.
     ens1d = np.sort( input_ens1d )
     ens_size = ens1d.shape[0]
+
+    
+    # Determine rank statistics of the input ensemble
+    # -----------------------------------------------
+    ens1d_inds = np.argsort( np.argsort( input_ens1d ) )
 
 
     # Define an offset value
@@ -119,95 +294,10 @@ def BBRH_preprocess_ens( input_ens1d, min_bound, max_bound ):
     num_overlarge   = np.sum( flags_overlarge )
     ens1d[flags_overlarge] = max_bound - ( np.arange(num_overlarge)+1 )[::-1] * offset_val
     
-    return ens1d
 
+    # Return de-sorted preprocessed ensemble
+    return ens1d[ens1d_inds]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''
-    Function to fit BBRH distribution to an ensemble via matching the first two moments
-
-    Mandatory arguments:
-    --------------------
-    1) input_ens1d
-            1D NumPy array containing an ensemble of values for a forecast model variable
-    2) min_bound
-            User-specified scalar value indicating the left boundary of BBRH's support
-    3) max_bound
-            User-specified scalar value indicating the right boundary of BBRH's support
-
-    Output:
-    -------
-    1) cdf_locs
-            1D NumPy array indicating locations where BBRH's CDF is defined.
-            Note that cdf_locs[1:-1] contains the preprocessed ensemble.
-    2) cdf_vals
-            1D NumPy array of BBRH CDF values at cdf_locs
-
-            
-    Additional note:
-        No Just-In-Time decorator because there are no loops inside this function
-'''
-def BBRH_fit_dist_to_ens( input_ens1d, min_bound, max_bound ):
-
-    # Ensemble size
-    ens_size = input_ens1d.shape[0]
-
-    # Determine first two moments of the ensemble
-    # -------------------------------------------
-    ens_moment1 = np.mean(          input_ens1d     )
-    ens_moment2 = np.mean( np.power(input_ens1d, 2) )
-
-
-    # Generate locations at which the BBRH CDF is defined
-    # ---------------------------------------------------
-    cdf_locs       = np.zeros( ens_size + 2, dtype='f8' )
-    cdf_locs[1:-1] = BBRH_preprocess_ens( input_ens1d, min_bound, max_bound )
-    cdf_locs[0]    = min_bound
-    cdf_locs[-1]   = max_bound
-
-
-    # Fit BBRH by solving a system of linear equations
-    # ------------------------------------------------
-    left_tail_mass, right_tail_mass, interior_interval_mass = (
-        BBRH_solve_moment_matching_equations( cdf_locs, ens_size, ens_moment1, ens_moment2 )
-    )
-
-    # Exception case: tail masses must be positive semi-definite and the interior interval
-    # mass must be positive definite
-    if ( left_tail_mass < 0 or right_tail_mass < 0 or interior_interval_mass <= 0 ):
-        left_tail_mass          = 1./(ens_size +1)
-        right_tail_mass         = 1./(ens_size +1)
-        interior_interval_mass  = 1./(ens_size +1)
-    # ---- End of exception handling
-
-    # Construct CDF values
-    cdf_vals = np.zeros( ens_size+2, dtype='f8' )
-    cdf_vals[0] = 0.
-    cdf_vals[1:-1] = left_tail_mass + np.arange(ens_size ) * interior_interval_mass
-    cdf_vals[-1] = cdf_vals[-2] + right_tail_mass
-
-
-    return cdf_locs, cdf_vals
-
-
-
-    
 
 
 
@@ -445,7 +535,7 @@ if __name__ == '__main__':
     raw_ens[10:20] = 0.
 
     # Generate BBRH distribution with nasty bounds
-    cdf_locs, cdf_vals = BBRH_fit_dist_to_ens( raw_ens, -1, 2. )
+    cdf_locs, cdf_vals, ens1d = BBRH_fit_dist_to_ens( raw_ens, -1, 2. )
 
     plt.plot( cdf_locs, cdf_vals )
     plt.scatter( raw_ens, raw_ens*0-0.1, marker = 'x', s=20, c='r' )
