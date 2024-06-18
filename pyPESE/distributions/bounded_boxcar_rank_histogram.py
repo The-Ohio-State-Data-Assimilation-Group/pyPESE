@@ -67,13 +67,6 @@ class bounded_boxcar_rank_histogram:
         self.ens1d = ens1d
         return
 
-
-    # Preprocess ensemble to get rid of duplicate values and out-of-bounds
-    # values
-    def preprocess_ens( ens1d, min_bound, max_bound ):
-        return BBRH_preprocess_ens( input_ens1d, min_bound, max_bound )
-
-
     # Fit BBRH distirbution to 1d data
     def fit( data1d ):
         # For each variable, fit BBRH distribution
@@ -153,11 +146,6 @@ def BBRH_fit_dist_to_ens( input_ens1d, min_bound, max_bound ):
     ens_moment2 = np.mean( np.power(input_ens1d, 2) )
 
 
-    # Preprocess ensemble
-    # -------------------
-    ens1d = BBRH_preprocess_ens( input_ens1d, min_bound, max_bound )
-
-
     # Generate locations at which the BBRH CDF is defined
     # ---------------------------------------------------
     cdf_locs       = np.zeros( ens_size + 2, dtype='f8' )
@@ -194,109 +182,6 @@ def BBRH_fit_dist_to_ens( input_ens1d, min_bound, max_bound ):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''
-    Function to preprocess ensemble to handle out-of-bounds values and duplicate values
-
-    Mandatory arguments:
-    --------------------
-    1) input_ens1d
-            1D NumPy array containing an ensemble of values for a forecast model variable
-    2) min_bound
-            User-specified scalar value indicating the left boundary of BBRH's support
-    3) max_bound
-            User-specified scalar value indicating the right boundary of BBRH's support
-
-    Output:
-    -------
-    1) ens1d
-            1D NumPy array containing preprocessed ensemble (NOT SORTED!!!)
-    
-'''
-# @njit( nb_f64[:]( nb_f64[:], nb_f64, nb_f64 ) )
-def BBRH_preprocess_ens( input_ens1d, min_bound, max_bound ):
-
-    # Sort ensemble values
-    # --------------------
-    # This procedure also guards against unintentional object-passing effects because
-    # an internal copy of the ensemble of values is generated.
-    ens1d = np.sort( input_ens1d )
-    ens_size = ens1d.shape[0]
-
-    
-    # Determine rank statistics of the input ensemble
-    # -----------------------------------------------
-    ens1d_inds = np.argsort( np.argsort( input_ens1d ) )
-
-
-    # Define an offset value
-    # ----------------------
-    # To handle value duplicate & out-of-bound values, a small offset must be defined.
-    # The reason for this definition will be apparant later in this function.
-
-    # Determine smallest interval between unique values in BBRH
-    all_vals = np.zeros( ens_size+2, dtype='f' )
-    all_vals[0] = min_bound
-    all_vals[1] = max_bound
-    all_vals[2:] = ens1d
-    uniq_vals = np.unique(ens1d)
-    smallest_uniq_interval = (uniq_vals[1:] - uniq_vals[:-1]).min()
-
-    # Define offset value based on smallest interval between unique values
-    offset_val = smallest_uniq_interval / (ens_size)
-
-
-    # Handling duplicate values within the bounded ensemble
-    # -----------------------------------------------------
-    # Detect duplicates
-    uniq_vals, uniq_cnts = np.unique( ens1d, return_counts=True )
-    flags_duplicated_uniq_vals = uniq_cnts > 1
-
-    # Reconstruct ensemble with all duplicates removed
-    ens1d[:] = np.nan
-    ind = 0
-    for iuniq in range( uniq_vals.shape[0] ):
-        cnt = uniq_cnts[iuniq]
-        new_vals  = np.arange(cnt) * offset_val 
-        new_vals -= np.mean(new_vals)
-        new_vals += uniq_vals[iuniq]
-        ens1d[ind:ind+cnt] = new_vals
-        ind += cnt
-    # ---- End of ensemble reconstruction
-
-
-    # Handling out-of-bounds ensemble values
-    # --------------------------------------
-    # Handle overly small ensemble values by relocating them to the left boundary 
-    # of the support, PLUS some offset
-    flags_oversmall = (ens1d <= min_bound)
-    num_oversmall   = np.sum(flags_oversmall)
-    ens1d[flags_oversmall] = min_bound + ( np.arange(num_oversmall)+1 ) * offset_val
-
-    # Handle overly large ensemble values by relocating them to the right boundary
-    # of the support, MINUS some offset
-    flags_overlarge = (ens1d >= max_bound)
-    num_overlarge   = np.sum( flags_overlarge )
-    ens1d[flags_overlarge] = max_bound - ( np.arange(num_overlarge)+1 )[::-1] * offset_val
-    
-
-    # Return de-sorted preprocessed ensemble
-    return ens1d[ens1d_inds]
 
 
 
