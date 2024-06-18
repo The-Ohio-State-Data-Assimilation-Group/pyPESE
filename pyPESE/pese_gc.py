@@ -77,6 +77,16 @@ def pese_gc( fcst_ens_2d, list_of_dist_classes, num_virt_ens, rng_seed=0 ):
     # For memory efficiency, only applying PESE-GC on one variable at a time.
     for ivar in range( num_variables ):
 
+        # Pre-PESE-GC check: any duplicate values?
+        uniq_vals = np.unique( fcst_ens_2d[ivar,:] )
+        if ( len(uniq_vals) < num_fcst_ens ):
+            sigma = np.std( fcst_ens_2d[ivar], ddof=1) / 1e3
+            if sigma == 0:
+                sigma = np.sqrt(np.mean(np.power(fcst_ens_2d[ivar,:],2))) / 1e5
+            fcst_ens_2d[ivar,:] += np.random.normal( scale=sigma, size=num_fcst_ens )
+        # --- End of special treatment.
+
+
         # Step 1: Fit distribution to fcst ensembel for selected variable
         params = list_of_dist_classes[ivar].fit( fcst_ens_2d[ivar,:])
         fitted_dist = list_of_dist_classes[ivar]( *params )
