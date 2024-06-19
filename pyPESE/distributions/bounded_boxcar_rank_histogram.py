@@ -68,7 +68,7 @@ class bounded_boxcar_rank_histogram:
         return
 
     # Fit BBRH distirbution to 1d data
-    def fit( data1d, min_bound=-9e12, max_bound=9e12 ):
+    def fit( data1d, min_bound=-1e9, max_bound=1e9 ):
         # For each variable, fit BBRH distribution
         return BBRH_fit_dist_to_ens( data1d, min_bound, max_bound )
 
