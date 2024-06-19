@@ -65,7 +65,7 @@ class bounded_boxcar_rank_histogram:
         return
 
     # Fit BBRH distirbution to 1d data
-    def fit( data1d ):
+    def fit( data1d,  min_bound, max_bound ):
         # For each variable, fit BBRH distribution
         return BBRH_fit_dist_to_ens( data1d, min_bound, max_bound )
 
@@ -84,7 +84,7 @@ class bounded_boxcar_rank_histogram:
     # Function to draw samples consistent with fitted BBRH
     def rvs( self, shape ):
         uniform_samples1d = np.random.uniform( size=np.prod(shape) )
-        samples1d = eval_bbrh_inv_cdf( uniform_samples1d )
+        samples1d = self.ppf( uniform_samples1d )
         return samples1d.reshape(shape)
     
 # ------ End of BBRH distribution SciPy-like class
@@ -406,19 +406,158 @@ def eval_bbrh_pdf( eval_pts, bbrh_pts, bbrh_cdf ):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+    Function to preprocess ensemble to handle out-of-bounds values and duplicate values
+
+    Such values can cause issues with certain distributions, and issues with resampling.
+
+    Mandatory arguments:
+    --------------------
+    1) input_ens1d
+            1D NumPy array containing an ensemble of values for a forecast model variable
+    2) min_bound
+            User-specified scalar value indicating the left boundary of BBRH's support
+    3) max_bound
+            User-specified scalar value indicating the right boundary of BBRH's support
+
+    Output:
+    -------
+    1) ens1d
+            1D NumPy array containing preprocessed ensemble (NOT SORTED!!!)
+    
+'''
+def preprocess_ens( input_ens1d, min_bound, max_bound ):
+
+    # Sort ensemble values
+    # --------------------
+    # This procedure also guards against unintentional object-passing effects because
+    # an internal copy of the ensemble of values is generated.
+    ens1d = np.sort( input_ens1d )
+    ens_size = ens1d.shape[0]
+
+    
+    # Determine rank statistics of the input ensemble
+    # -----------------------------------------------
+    ens1d_inds = np.argsort( np.argsort( input_ens1d ) )
+
+
+    # Define an offset value
+    # ----------------------
+    # To handle value duplicate & out-of-bound values, a small offset must be defined.
+    # The reason for this definition will be apparant later in this function.
+
+    # Determine smallest interval between unique values in BBRH
+    all_vals = np.zeros( ens_size+2, dtype='f' )
+    all_vals[0] = min_bound
+    all_vals[1] = max_bound
+    all_vals[2:] = ens1d
+    uniq_vals = np.unique(ens1d)
+    smallest_uniq_interval = (uniq_vals[1:] - uniq_vals[:-1]).min()
+
+    # Define offset value based on smallest interval between unique values
+    offset_val = smallest_uniq_interval / (ens_size)
+
+
+    # Handling duplicate values within the bounded ensemble
+    # -----------------------------------------------------
+    # Detect duplicates
+    uniq_vals, uniq_cnts = np.unique( ens1d, return_counts=True )
+    flags_duplicated_uniq_vals = uniq_cnts > 1
+
+    # Reconstruct ensemble with all duplicates removed
+    ens1d[:] = np.nan
+    ind = 0
+    for iuniq in range( uniq_vals.shape[0] ):
+        cnt = uniq_cnts[iuniq]
+        new_vals  = np.arange(cnt) * offset_val 
+        new_vals -= np.mean(new_vals)
+        new_vals += uniq_vals[iuniq]
+        ens1d[ind:ind+cnt] = new_vals
+        ind += cnt
+    # ---- End of ensemble reconstruction
+
+
+    # Handling out-of-bounds ensemble values
+    # --------------------------------------
+    # Handle overly small ensemble values by relocating them to the left boundary 
+    # of the support, PLUS some offset
+    flags_oversmall = (ens1d <= min_bound)
+    num_oversmall   = np.sum(flags_oversmall)
+    ens1d[flags_oversmall] = min_bound + ( np.arange(num_oversmall)+1 ) * offset_val
+
+    # Handle overly large ensemble values by relocating them to the right boundary
+    # of the support, MINUS some offset
+    flags_overlarge = (ens1d >= max_bound)
+    num_overlarge   = np.sum( flags_overlarge )
+    ens1d[flags_overlarge] = max_bound - ( np.arange(num_overlarge)+1 )[::-1] * offset_val
+    
+
+    # Return de-sorted preprocessed ensemble
+    return ens1d[ens1d_inds]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 if __name__ == '__main__':
 
     from matplotlib import use as mpl_use
     mpl_use('agg')
     import matplotlib.pyplot as plt
+#     from pyPESE.utility import preprocess_ens
 
     # Generate a test ensemble with degenerate values
     np.random.seed(0)
     raw_ens = np.random.normal( size=30 )
     raw_ens[10:20] = 0.
 
+    ens1d = preprocess_ens( raw_ens, -1, 2)
+
     # Generate BBRH distribution with nasty bounds
-    cdf_locs, cdf_vals, ens1d = BBRH_fit_dist_to_ens( raw_ens, -1, 2. )
+    cdf_locs, cdf_vals = bounded_boxcar_rank_histogram.fit( ens1d, -1., 2. )
+    bbrh_obj = bounded_boxcar_rank_histogram( cdf_locs, cdf_vals )
+
+    random_samples = bbrh_obj.rvs( (1000,1000) )
+
+    print( np.mean( ens1d), np.var(ens1d, ddof=1))
+    print( np.mean( random_samples), np.var(random_samples, ddof=1))
+
 
     plt.plot( cdf_locs, cdf_vals )
     plt.scatter( raw_ens, raw_ens*0-0.1, marker = 'x', s=20, c='r' )
