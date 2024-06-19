@@ -58,6 +58,9 @@ from numba.types import Tuple as nb_tuple
 '''
 class bounded_boxcar_rank_histogram:
 
+    name = 'bounded boxcar rank histogram'
+
+
     # Initialize 
     def __init__( self, cdf_locs, cdf_vals ):
         self.cdf_locs = cdf_locs
@@ -65,7 +68,7 @@ class bounded_boxcar_rank_histogram:
         return
 
     # Fit BBRH distirbution to 1d data
-    def fit( data1d,  min_bound, max_bound ):
+    def fit( data1d, min_bound=-9e12, max_bound=9e12 ):
         # For each variable, fit BBRH distribution
         return BBRH_fit_dist_to_ens( data1d, min_bound, max_bound )
 
@@ -111,10 +114,8 @@ class bounded_boxcar_rank_histogram:
 
     Mandatory arguments:
     --------------------
-    1) ens1d
+    1) raw_ens1d
             1D NumPy array containing an ensemble of values for a forecast model variable
-            IMPORTANT: This ensemble must not contain any duplicate values or out-of-bounds
-            values.
     2) min_bound
             User-specified scalar value indicating the left boundary of BBRH's support
     3) max_bound
@@ -132,16 +133,21 @@ class bounded_boxcar_rank_histogram:
     Additional note:
         No Just-In-Time decorator because there are no loops inside this function
 '''
-def BBRH_fit_dist_to_ens( ens1d, min_bound, max_bound ):
+def BBRH_fit_dist_to_ens( raw_ens1d, min_bound, max_bound ):
 
     # Ensemble size
-    ens_size = ens1d.shape[0]
+    ens_size = raw_ens1d.shape[0]
 
 
     # Determine first two moments of the ensemble
     # -------------------------------------------
-    ens_moment1 = np.mean(          ens1d     )
-    ens_moment2 = np.mean( np.power(ens1d, 2) )
+    ens_moment1 = np.mean(          raw_ens1d     )
+    ens_moment2 = np.mean( np.power(raw_ens1d, 2) )
+
+
+    # Preprocess the ensemble to remove duplicates & out-of-bounds
+    # -------------------------------------------------------------
+    ens1d = preprocess_ens( raw_ens1d, min_bound, max_bound )
 
 
     # Generate locations at which the BBRH CDF is defined
