@@ -6,13 +6,13 @@
 
     The BBRH distribution differs from the boxcar rank histogram (BRH) distribution in
     terms of:
-    1) Termination location of the tails are fixed in BBRH whereas those of BRH are 
+    1) Termination location of the tails are fixed in BBRH whereas those of BBRH are 
        computed. 
     2) BBRH's left and right tails can have different probability masses whereas those
-       of BRH have the same probability mass.
+       of BBRH have the same probability mass.
 
     When it comes to moment matching, fitting the BBRH only requires solving a system of 
-    THREE linear equations (efficient). In contrast, fitting the BRH requires solving a
+    THREE linear equations (efficient). In contrast, fitting the BBRH requires solving a
     system of nonlinear polynomials (less efficient than the BBRH fitting process). These
     difference in fitting processes is due to the differences in the two distributions'
     treatment of tail probability masses and tail termination locations.
@@ -52,8 +52,6 @@ from numba.types import Tuple as nb_tuple
 
 
 
-
-
 '''
     SciPy-like class for BBRH distribution.
     This is a univariate bounded rank histogram distribution!!!
@@ -61,36 +59,35 @@ from numba.types import Tuple as nb_tuple
 class bounded_boxcar_rank_histogram:
 
     # Initialize 
-    def __init__( self, cdf_locs, cdf_vals, ens1d ):
+    def __init__( self, cdf_locs, cdf_vals ):
         self.cdf_locs = cdf_locs
         self.cdf_vals = cdf_vals
-        self.ens1d = ens1d
         return
 
     # Fit BBRH distirbution to 1d data
     def fit( data1d ):
         # For each variable, fit BBRH distribution
-        return BBRH_fit_dist_to_ens( data1d )
+        return BBRH_fit_dist_to_ens( data1d, min_bound, max_bound )
 
-    # # Function to evaluate CDF of fitted BRH. 
-    # def cdf(self, eval_pts):
-    #     return eval_brh_cdf( eval_pts, self.brh_pts, self.brh_cdf )
+    # Function to evaluate CDF of fitted BBRH. 
+    def cdf(self, eval_pts):
+        return eval_bbrh_cdf( eval_pts, self.cdf_locs, self.cdf_vals )
 
-    # # Function to evaluate inverse CDF of fitted BRH
-    # def ppf(self, eval_cdf):
-    #     return eval_brh_inv_cdf( eval_cdf, self.brh_pts, self.brh_cdf )
+    # Function to evaluate inverse CDF of fitted BBRH
+    def ppf(self, eval_cdf):
+        return eval_bbrh_inv_cdf( eval_cdf, self.cdf_locs, self.cdf_vals )
     
-    # # Function to evaluate PDF of fitted BRH
-    # def pdf( self, eval_pts ):
-    #     return eval_brh_pdf( eval_pts, self.brh_pts, self.brh_cdf )
+    # Function to evaluate PDF of fitted BBRH
+    def pdf( self, eval_pts ):
+        return eval_bbrh_pdf( eval_pts, self.cdf_locs, self.cdf_vals  )
         
-    # # Function to draw samples consistent with fitted BRH
-    # def rvs( self, shape ):
-    #     uniform_samples1d = np.random.uniform( size=np.prod(shape) )
-    #     samples1d = eval_brh_inv_cdf( uniform_samples1d )
-    #     return samples1d.reshape(shape)
+    # Function to draw samples consistent with fitted BBRH
+    def rvs( self, shape ):
+        uniform_samples1d = np.random.uniform( size=np.prod(shape) )
+        samples1d = eval_bbrh_inv_cdf( uniform_samples1d )
+        return samples1d.reshape(shape)
     
-# ------ End of BRH distribution SciPy-like class
+# ------ End of BBRH distribution SciPy-like class
 
 
 
@@ -114,8 +111,10 @@ class bounded_boxcar_rank_histogram:
 
     Mandatory arguments:
     --------------------
-    1) input_ens1d
+    1) ens1d
             1D NumPy array containing an ensemble of values for a forecast model variable
+            IMPORTANT: This ensemble must not contain any duplicate values or out-of-bounds
+            values.
     2) min_bound
             User-specified scalar value indicating the left boundary of BBRH's support
     3) max_bound
@@ -128,22 +127,21 @@ class bounded_boxcar_rank_histogram:
             Note that cdf_locs[1:-1] contains the preprocessed ensemble.
     2) cdf_vals
             1D NumPy array of BBRH CDF values at cdf_locs
-    3) ens1d
-            1D NumPy array containing preprocessed ensemble (NOT SORTED)
 
             
     Additional note:
         No Just-In-Time decorator because there are no loops inside this function
 '''
-def BBRH_fit_dist_to_ens( input_ens1d, min_bound, max_bound ):
+def BBRH_fit_dist_to_ens( ens1d, min_bound, max_bound ):
 
     # Ensemble size
-    ens_size = input_ens1d.shape[0]
+    ens_size = ens1d.shape[0]
+
 
     # Determine first two moments of the ensemble
     # -------------------------------------------
-    ens_moment1 = np.mean(          input_ens1d     )
-    ens_moment2 = np.mean( np.power(input_ens1d, 2) )
+    ens_moment1 = np.mean(          ens1d     )
+    ens_moment2 = np.mean( np.power(ens1d, 2) )
 
 
     # Generate locations at which the BBRH CDF is defined
@@ -175,7 +173,7 @@ def BBRH_fit_dist_to_ens( input_ens1d, min_bound, max_bound ):
     cdf_vals[-1] = cdf_vals[-2] + right_tail_mass
 
 
-    return cdf_locs, cdf_vals, ens1d
+    return cdf_locs, cdf_vals
 
 
 
@@ -378,7 +376,7 @@ def eval_bbrh_inv_cdf( eval_cdf, bbrh_pts, bbrh_cdf ):
 # @njit( nb_f64[:](nb_f64[:],nb_f64[:],nb_f64[:])  )
 def eval_bbrh_pdf( eval_pts, bbrh_pts, bbrh_cdf ):
 
-    # Interval used to estimate BRH PDF values
+    # Interval used to estimate BBRH PDF values
     interval = (bbrh_pts[1:] - bbrh_pts[:-1]).min() * 1e-3
 
     # Identify left and right points used to evaluate 
