@@ -168,6 +168,17 @@ def pese_gc( fcst_ens_2d, list_of_dist_classes, list_extra_args, num_virt_ens, r
             list_extra_args[ivar]['max bound'] = fcst_ens_2d[ivar,:].max() + offsetting_interval
 
 
+        # Preamble: Handling situation where the min bound and the max bound are the same
+        if ( list_extra_args[ivar]['min bound'] == list_extra_args[ivar]['max bound'] ):    
+            if ( list_extra_args[ivar]['min bound'] != 0 ):
+                list_extra_args[ivar]['min bound'] -= list_extra_args[ivar]['min bound'] * 2e-5
+                list_extra_args[ivar]['max bound'] += list_extra_args[ivar]['min bound'] * 2e-5
+            else:
+                list_extra_args[ivar]['min bound'] -= 2e-5
+                list_extra_args[ivar]['max bound'] += 2e-5
+        # --- End of handling degenerate ensemble bounds            
+
+
         # Preamble: Remove duplicates and/or out-of-bounds values from ensemble
         extra_args = list_extra_args[ivar]
         fcst_ens_2d[ivar,:] = preprocess_ens( 
