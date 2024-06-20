@@ -71,7 +71,7 @@ def preprocess_ens( input_ens1d, min_bound=-1e9, max_bound=1e9 ):
     # Special handling: what if the ensemble has entirely identical values?
     if ( len( uniq_vals ) == 1 ):
 
-        if ( uniq_vals[0] != 0 ):
+        if ( uniq_vals[0] == 0 ):
             smallest_uniq_interval = 1e-5
         else:
             smallest_uniq_interval = uniq_vals[0] * 1e-5
@@ -81,14 +81,9 @@ def preprocess_ens( input_ens1d, min_bound=-1e9, max_bound=1e9 ):
         if ( len(uniq_vals) == 2 ):
             smallest_uniq_interval = uniq_vals[1:] - uniq_vals[:-1]
         else:
-            smallest_uniq_interval = (uniq_vals[1:] - uniq_vals[:-1]).min()
-        
-
- 
+            smallest_uniq_interval = (uniq_vals[1:] - uniq_vals[:-1]).min() 
      # --- End of special handling.
 
-
-    smallest_uniq_interval = (uniq_vals[1:] - uniq_vals[:-1]).min()
 
     # Define offset value based on smallest interval between unique values
     offset_val = smallest_uniq_interval / (ens_size)
