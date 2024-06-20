@@ -17,8 +17,8 @@ from scipy.stats import skewnorm, gamma, norm
 # Import PESE-GC function from pyPESE
 from pyPESE.pese_gc import pese_gc
 
-# Import custom-made non-parametric distribution (in pyPESE package)
-from pyPESE.distributions.bounded_rank_histogram import bounded_rank_histogram
+# Import custom-made non-parametric distribution class (in pyPESE package)
+from pyPESE.distributions.bounded_boxcar_rank_histogram import bounded_boxcar_rank_histogram as bbrh
 
 
 
@@ -51,19 +51,29 @@ original_ens[1,:] = skewnorm(-10).ppf( original_ens[1,:])
 '''
 
 # Number of virtual members to create
-ens_size_virtual  = 1000
+ens_size_virtual  = 2000
 
 # Example 1: Employ user-informed distributions
 # ---------------------------------------------
 # Init list of distribution classes
 list_dist_classes = [gamma, skewnorm]
-virtual_ensemble1 = pese_gc( original_ens, list_dist_classes, ens_size_virtual, rng_seed=0 )
+
+# Init list of extra arguments needed for ensemble preprocessing
+list_extra_args = ([
+    {'min bound':    0, 'max bound': 1e9 },  # Arguments for the first variable
+    {'min bound': -1e9, 'max bound': 1e9 }   # Arguments for the second variable
+])
+virtual_ensemble1 = pese_gc( original_ens, list_dist_classes, list_extra_args, ens_size_virtual, rng_seed=0 )
 
 
 # Example 2: Employ non-parametric distribution (bounded rank histogram)
 # ----------------------------------------------------------------------
-list_dist_classes = [bounded_rank_histogram, bounded_rank_histogram]
-virtual_ensemble2 = pese_gc( original_ens, list_dist_classes, ens_size_virtual, rng_seed=0 )
+list_dist_classes = [bbrh, bbrh]
+list_extra_args = ([
+    {'min bound':    0, 'max bound': 1e9 },  # Arguments for the first variable
+    {'min bound':   -4, 'max bound': 0   }   # Arguments for the second variable
+])
+virtual_ensemble2 = pese_gc( original_ens, list_dist_classes, list_extra_args, ens_size_virtual, rng_seed=0 )
 
 
 # Plot both examples
