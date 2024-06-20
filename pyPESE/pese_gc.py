@@ -41,21 +41,23 @@ from pyPESE.utilities import preprocess_ens
     -----------------
     1) fcst_ens1d
             1D NumPy array containing an ensemble of values for a forecast model variable
+
     2) dist_class
             Scipy/pyPESE statistical distribution class
 
-
-    Optional Inputs:
-    ----------------
-    1) extra_args
+    3) extra_args
             A Python dictionary containing entries needed to fit the distribution in question
 '''
 def univariate_dist_fit( fcst_ens1d, dist_class, extra_args ):
 
     # Special fitting procedure for BBRH distribution
     if dist_class.name == 'bounded boxcar rank histogram':
+
         params = dist_class.fit( 
-            fcst_ens1d, min_bound = extra_args['min bound'], 
+            fcst_ens1d, 
+            extra_args['raw moment 1'], 
+            extra_args['raw moment 2'],
+            min_bound = extra_args['min bound'], 
             max_bound = extra_args['max bound']
         )
     
@@ -72,78 +74,6 @@ def univariate_dist_fit( fcst_ens1d, dist_class, extra_args ):
     return fitted_dist
 
     
-
-
-
-
-
-
-
-
-
-
-
-
-'''
-    FUNCTION TO TRANSFORM UNIVARIATE ENSEMBLE INTO PROBIT SPACE (STEP 2 OF PESE-GC)
-
-    Mandatory Inputs:
-    -----------------
-    1) fcst_ens1d
-            1D NumPy array containing an ensemble of values for a forecast model variable
-    2) fitted_dist
-            An instance of the variable's Scipy/pyPESE distribution class. 
-            This instance comes from applying univariate_dist_fit on input_ens1d.
-'''
-def univariate_ppi_transform( fcst_ens1d, fitted_dist ):
-
-    # Apply quantile transform
-    probit_ens1d = fitted_dist.cdf( fcst_ens1d )
-
-    # Apply probit transform & return 
-    probit_ens1d = norm.ppf( probit_ens1d )
-
-    return probit_ens1d
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''
-    FUNCTION TO TRANSFORM UNIVARIATE ENSEMBLE INTO NATIVE SPACE (STEP 4 OF PESE-GC)
-
-    Mandatory Inputs:
-    -----------------
-    1) probit_ens1d
-            1D NumPy array containing an ensemble of probit-space values (corresponds to 
-            one model variable)
-    2) fitted_dist
-            An instance of the variable's Scipy/pyPESE distribution class. 
-            This instance comes from applying univariate_dist_fit on input_ens1d.
-'''
-def univariate_inverse_ppi_transform( probit_ens1d, fitted_dist ):
-
-    # Map to quantile space
-    output_ens1d = norm.cdf( probit_ens1d )
-
-    # Map to model space
-    output_ens1d = fitted_dist.ppf( output_ens1d )
-
-    return output_ens1d
 
 
 
@@ -177,11 +107,11 @@ def univariate_inverse_ppi_transform( probit_ens1d, fitted_dist ):
                 a) scipy.stats distribution classes (e.g., skewnorm, gamma, norm)
                 b) pyPESE-defined distributions 
     
-    3) list_dist_extra_args (number of elements: num_variables)
-            A Python List of tuples. Each tuple contains extra arguments needed to fit a
-            corresponding distribution class in list_dist_classes.
-            E.g., list_dist_extra_args = 
-
+    3) list_extra_args (number of elements: num_variables)
+            A Python List of dictionaries. 
+            Each dictionary contains information needed for preprocessing the ensemble
+            and to evoke the distribution fitting process.
+            At minimum, each dictionary must have 'min bound' and 'max bound' entries.
 
     4) num_virt_ens (scalar integer)
             Number of virtual members to create.
@@ -194,75 +124,76 @@ def univariate_inverse_ppi_transform( probit_ens1d, fitted_dist ):
             Gaussian resampling
 
 '''
+def pese_gc( fcst_ens_2d, list_of_dist_classes, list_extra_args, num_virt_ens, rng_seed=0 ): 
+
+    # Determine all dimension sizes
+    num_variables, num_fcst_ens = fcst_ens_2d.shape
 
 
+    # Check if number of virtual members is appropriate.
+    if ( num_virt_ens <= num_fcst_ens ):
+        print( 'ERROR: pese_gc')
+        print( '    Number of virtual members must be more than number of original members')
+        quit()
 
 
-
-# def pese_gc( fcst_ens_2d, list_of_dist_classes, num_virt_ens, rng_seed=0 ): 
-
-#     # Determine all dimension sizes
-#     num_variables, num_fcst_ens = fcst_ens_2d.shape
-
-
-#     # Check if number of virtual members is appropriate.
-#     if ( num_virt_ens <= num_fcst_ens ):
-#         print( 'ERROR: pese_gc')
-#         print( '    Number of virtual members must be more than number of original members')
-#         quit()
+    # Generate Gaussian resampling coefficient matrix
+    gauss_resamp_matrix = compute_unlocalized_gaussian_resampling_coefficients( 
+        num_fcst_ens, num_virt_ens, rng_seed=rng_seed 
+    )
 
 
-#     # Generate Gaussian resampling coefficient matrix
-#     gauss_resamp_matrix = compute_unlocalized_gaussian_resampling_coefficients( 
-#         num_fcst_ens, num_virt_ens, rng_seed=rng_seed 
-#     )
+    # Init array to hold the virtual ensemble
+    virt_ens_2d = np.zeros( [num_variables, num_virt_ens] )
+
+    # Init array to hold fcst and virtual probits
+    fcst_probit = np.zeros( [1, num_fcst_ens] )
 
 
-#     # Init array to hold the virtual ensemble
-#     virt_ens_2d = np.zeros( [num_variables, num_virt_ens] )
+    # For memory efficiency, only applying PESE-GC on one variable at a time.
+    for ivar in range( num_variables ):
 
-#     # Init array to hold fcst and virtual probits
-#     fcst_probit = np.zeros( [1, num_fcst_ens] )
-
-
-#     # For memory efficiency, only applying PESE-GC on one variable at a time.
-#     for ivar in range( num_variables ):
-
-#         # Pre-PESE-GC check: any duplicate values?
-#         uniq_vals = np.unique( fcst_ens_2d[ivar,:] )
-#         if ( len(uniq_vals) < num_fcst_ens ):
-#             sigma = np.std( fcst_ens_2d[ivar], ddof=1) / 1e3
-#             if sigma == 0:
-#                 sigma = np.sqrt(np.mean(np.power(fcst_ens_2d[ivar,:],2))) / 1e5
-#             fcst_ens_2d[ivar,:] += np.random.normal( scale=sigma, size=num_fcst_ens )
-#         # --- End of special treatment.
+        # Preamble: Compute first two raw moments of the ensemble 
+        #           These moments are useful for fitting the bounded boxcar rank histogram
+        #           distribution.
+        list_extra_args[ivar]['raw moment 1'] = np.mean( fcst_ens_2d[ivar,:] )
+        list_extra_args[ivar]['raw moment 2'] = np.mean( np.power(fcst_ens_2d[ivar,:], 2) )
 
 
-#         # Step 1: Fit distribution to fcst ensembel for selected variable
-#         params = list_of_dist_classes[ivar].fit( fcst_ens_2d[ivar,:])
-#         fitted_dist = list_of_dist_classes[ivar]( *params )
+        # Preamble: Remove duplicates and/or out-of-bounds values from ensemble
+        extra_args = list_extra_args[ivar]
+        fcst_ens_2d[ivar,:] = preprocess_ens( 
+            fcst_ens_2d[ivar,:], min_bound = extra_args['min bound'],
+            max_bound = extra_args['max bound'] 
+        )
 
-#         # Step 2: Transform forecast ensemble into probit space
-#         fcst_probit[0,:] = norm.ppf( 
-#             fitted_dist.cdf( fcst_ens_2d[ivar,:] )
-#         )
-#         fcst_probit -= np.mean(fcst_probit)
-#         fcst_probit /= np.std( fcst_probit, ddof=1)
+        # Step 1: Fit distribution to fcst ensembel for selected variable
+        extra_args = list_extra_args[ivar]
+        fitted_dist = univariate_dist_fit(
+            fcst_ens_2d[ivar,:], list_of_dist_classes[ivar], extra_args
+        )
 
-#         # Step 3: Apply fast Gaussian resampling
-#         virt_probit = ( np.matmul( fcst_probit, gauss_resamp_matrix ) )
+        # Step 2: Transform forecast ensemble into probit space
+        fcst_probit[0,:] = norm.ppf( 
+            fitted_dist.cdf( fcst_ens_2d[ivar,:] )
+        )
+        fcst_probit -= np.mean(fcst_probit)
+        fcst_probit /= np.std( fcst_probit, ddof=1)
 
-#         # Step 4: Invert PPI transforms on virtual probits
-#         virt_ens_2d[ivar,:] = (
-#             fitted_dist.ppf(
-#                 norm.cdf( virt_probit[0,:] )
-#             )
-#         )
+        # Step 3: Apply fast Gaussian resampling
+        virt_probit = ( np.matmul( fcst_probit, gauss_resamp_matrix ) )
 
-#     # --- End of loop over variables
+        # Step 4: Invert PPI transforms on virtual probits
+        virt_ens_2d[ivar,:] = (
+            fitted_dist.ppf(
+                norm.cdf( virt_probit[0,:] )
+            )
+        )
+
+    # --- End of loop over variables
 
     
-#     return virt_ens_2d
+    return virt_ens_2d
 
 
 
