@@ -160,6 +160,14 @@ def pese_gc( fcst_ens_2d, list_of_dist_classes, list_extra_args, num_virt_ens, r
         list_extra_args[ivar]['raw moment 2'] = np.mean( np.power(fcst_ens_2d[ivar,:], 2) )
 
 
+        # Preamble: If min and max bounds are not provided in list_extra_args, then 
+        #           supplement with the max and min bounds of the forecast ensemble
+        if ( 'min bound' not in list_extra_args[ivar] ):
+            list_extra_args[ivar]['min bound'] = fcst_ens_2d[ivar,:].min()
+        if ( 'max bound' not in list_extra_args[ivar] ):
+            list_extra_args[ivar]['max bound'] = fcst_ens_2d[ivar,:].max()
+
+
         # Preamble: Remove duplicates and/or out-of-bounds values from ensemble
         extra_args = list_extra_args[ivar]
         fcst_ens_2d[ivar,:] = preprocess_ens( 
