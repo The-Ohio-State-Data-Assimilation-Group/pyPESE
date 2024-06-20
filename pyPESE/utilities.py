@@ -27,10 +27,13 @@ import numpy as np
     --------------------
     1) input_ens1d
             1D NumPy array containing an ensemble of values for a forecast model variable
-    2) min_bound
-            User-specified scalar value indicating the left boundary of BBRH's support
-    3) max_bound
-            User-specified scalar value indicating the right boundary of BBRH's support
+
+    Optional arguments
+    ------------------
+    1) min_bound
+            User-specified scalar value indicating the left boundary of fcst pdf's support
+    2) max_bound
+            User-specified scalar value indicating the right boundary of fcst pdf's support
 
     Output:
     -------
@@ -38,7 +41,7 @@ import numpy as np
             1D NumPy array containing preprocessed ensemble (NOT SORTED!!!)
     
 '''
-def preprocess_ens( input_ens1d, min_bound, max_bound ):
+def preprocess_ens( input_ens1d, min_bound=-1e9, max_bound=1e9 ):
 
     # Sort ensemble values
     # --------------------
