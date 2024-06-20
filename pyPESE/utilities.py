@@ -78,7 +78,12 @@ def preprocess_ens( input_ens1d, min_bound=-1e9, max_bound=1e9 ):
 
     # Serviceable case: ensemble has more than 1 unique values
     else:
-        smallest_uniq_interval = (uniq_vals[1:] - uniq_vals[:-1]).min()
+        if ( len(uniq_vals) == 2 ):
+            smallest_uniq_interval = uniq_vals[1:] - uniq_vals[:-1]
+        else:
+            smallest_uniq_interval = (uniq_vals[1:] - uniq_vals[:-1]).min()
+        
+
  
      # --- End of special handling.
 
