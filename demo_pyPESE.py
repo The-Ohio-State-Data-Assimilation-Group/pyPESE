@@ -51,7 +51,7 @@ original_ens[1,:] = skewnorm(-10).ppf( original_ens[1,:])
 '''
 
 # Number of virtual members to create
-ens_size_virtual  = 2000
+ens_size_virtual  = 1000
 
 # Example 1: Employ user-informed distributions
 # ---------------------------------------------
@@ -70,8 +70,8 @@ virtual_ensemble1 = pese_gc( original_ens, list_dist_classes, list_extra_args, e
 # ----------------------------------------------------------------------
 list_dist_classes = [bbrh, bbrh]
 list_extra_args = ([
-    {'min bound':    0, 'max bound': 1e9 },  # Arguments for the first variable
-    {'min bound':   -4, 'max bound': 0   }   # Arguments for the second variable
+    {'min bound':    0, 'max bound': original_ens[0,:].max()+1 },  # Arguments for the first variable
+    {'min bound':   original_ens[1,:].min() -1, 'max bound': 0   }   # Arguments for the second variable
 ])
 virtual_ensemble2 = pese_gc( original_ens, list_dist_classes, list_extra_args, ens_size_virtual, rng_seed=0 )
 
