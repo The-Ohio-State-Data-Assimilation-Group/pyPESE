@@ -111,7 +111,6 @@ def univariate_dist_fit( fcst_ens1d, dist_class, extra_args ):
             A Python List of dictionaries. 
             Each dictionary contains information needed for preprocessing the ensemble
             and to evoke the distribution fitting process.
-            At minimum, each dictionary must have 'min bound' and 'max bound' entries.
 
     4) num_virt_ens (scalar integer)
             Number of virtual members to create.
@@ -162,10 +161,11 @@ def pese_gc( fcst_ens_2d, list_of_dist_classes, list_extra_args, num_virt_ens, r
 
         # Preamble: If min and max bounds are not provided in list_extra_args, then 
         #           supplement with the max and min bounds of the forecast ensemble
+        offsetting_interval = np.std( fcst_ens_2d[ivar,:] ) * 3./num_fcst_ens
         if ( 'min bound' not in list_extra_args[ivar] ):
-            list_extra_args[ivar]['min bound'] = fcst_ens_2d[ivar,:].min()
+            list_extra_args[ivar]['min bound'] = fcst_ens_2d[ivar,:].min() - offsetting_interval
         if ( 'max bound' not in list_extra_args[ivar] ):
-            list_extra_args[ivar]['max bound'] = fcst_ens_2d[ivar,:].max()
+            list_extra_args[ivar]['max bound'] = fcst_ens_2d[ivar,:].max() + offsetting_interval
 
 
         # Preamble: Remove duplicates and/or out-of-bounds values from ensemble
