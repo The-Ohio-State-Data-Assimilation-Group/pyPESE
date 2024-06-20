@@ -75,7 +75,9 @@ list_extra_args = ([
 ])
 virtual_ensemble2 = pese_gc( original_ens, list_dist_classes, list_extra_args, ens_size_virtual, rng_seed=0 )
 
+print( 'Mean and Variance of original ensemble')
 print( np.mean(original_ens, axis=1), np.var(original_ens, axis=1, ddof=1))
+print('Mean and Variance of virtual ensemble')
 print( np.mean( virtual_ensemble2, axis=1 ), np.var(virtual_ensemble2, axis=1, ddof=1) )
 
 
