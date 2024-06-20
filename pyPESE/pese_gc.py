@@ -169,13 +169,14 @@ def pese_gc( fcst_ens_2d, list_of_dist_classes, list_extra_args, num_virt_ens, r
 
 
         # Preamble: Handling situation where the min bound and the max bound are the same
-        if ( list_extra_args[ivar]['min bound'] == list_extra_args[ivar]['max bound'] ):    
-            if ( list_extra_args[ivar]['min bound'] != 0 ):
+        support = list_extra_args[ivar]['max bound'] - list_extra_args[ivar]['min bound']
+        if ( np.abs(support) < 4e-5 ):    
+            if ( np.abs(list_extra_args[ivar]['min bound']) > 1e-3 ):
                 list_extra_args[ivar]['min bound'] -= list_extra_args[ivar]['min bound'] * 2e-5
                 list_extra_args[ivar]['max bound'] += list_extra_args[ivar]['min bound'] * 2e-5
             else:
-                list_extra_args[ivar]['min bound'] -= 2e-5
-                list_extra_args[ivar]['max bound'] += 2e-5
+                list_extra_args[ivar]['min bound'] = -2e-5
+                list_extra_args[ivar]['max bound'] = 2e-5
         # --- End of handling degenerate ensemble bounds            
 
 
@@ -196,6 +197,14 @@ def pese_gc( fcst_ens_2d, list_of_dist_classes, list_extra_args, num_virt_ens, r
         fcst_probit[0,:] = norm.ppf( 
             fitted_dist.cdf( fcst_ens_2d[ivar,:] )
         )
+        if ( np.sum( np.isnan(fcst_probit) + np.isinf(fcst_probit) ) > 0 ):
+            print( 
+                'ERROR: Invalid value detected\n',  
+                fcst_probit[0,:] ,'\n',  
+                fcst_ens_2d[ivar,:], '\n', 
+                extra_args['min bound'], extra_args['max bound'],'\n'
+                'MEOW' )
+        
         fcst_probit -= np.mean(fcst_probit)
         fcst_probit /= np.std( fcst_probit, ddof=1)
 

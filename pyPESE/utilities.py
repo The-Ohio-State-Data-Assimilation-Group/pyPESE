@@ -71,7 +71,7 @@ def preprocess_ens( input_ens1d, min_bound=-1e9, max_bound=1e9 ):
     # Special handling: what if the ensemble has entirely identical values?
     if ( len( uniq_vals ) == 1 ):
 
-        if ( uniq_vals[0] == 0 ):
+        if ( np.abs(uniq_vals[0]) < 1e-5 ):
             smallest_uniq_interval = 1e-5
         else:
             smallest_uniq_interval = uniq_vals[0] * 1e-5
