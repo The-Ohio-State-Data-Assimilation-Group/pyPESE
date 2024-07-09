@@ -1051,7 +1051,7 @@ def SANITY_CHECK_geostrophic_flow_diagnosis():
     from scipy.optimize import minimize
 
     # Grid settings (must be even numbers)
-    nlat = 90
+    nlat = 180
     nlon = nlat * 2
     nlvl = 11
 
@@ -1097,16 +1097,14 @@ def SANITY_CHECK_geostrophic_flow_diagnosis():
 
     # Visualize geostrophic flow and geopotential height
     geopot3d = 9.81 * height3d
-    cnf = plt.contourf( lon1d, lat1d, geopot3d[:,:,10].T, 11, cmap = 'RdBu_r')
+    cnf = plt.contourf( lon1d, lat1d, geopot3d[:,:,5].T, 11, cmap = 'RdBu_r')
     cbar = plt.colorbar(cnf)
     cbar.ax.set_ylabel('Geopotential (J/kg)')
-    norm_u = u3d / np.sqrt( u3d**2 + v3d**2)
-    norm_v = v3d / np.sqrt( u3d**2 + v3d**2)
     # plt.quiver( lonmesh[::], latmesh, norm_u[:,:,2], norm_v[:,:,2])
     plt.streamplot( lon1d, lat1d, 
-        (u3d[:,:,5]).T, # / (111000 * np.cos( latmesh*PI/180 ))).T, 
-        (v3d[:,:,5]).T, #/111000).T,
-         color='k', density=1
+        (u3d[:,:,5] / (111000 * np.cos( latmesh*PI/180 ))).T, 
+        (v3d[:,:,5] / 111000).T,
+         color='k', density=2
     )
     plt.savefig('check_geostrophic_flow.png')
     plt.close()
