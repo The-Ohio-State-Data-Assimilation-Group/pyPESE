@@ -93,7 +93,7 @@ jit_cache_flag = False
 
     Returns a 3D NumPy array (lon, lat, level) containing those derivative values
 '''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+#njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_df_dx_on_eta_surface( field3d, lon1d, lat1d ):
 
     # Useful constants
@@ -162,7 +162,7 @@ def compute_df_dx_on_eta_surface( field3d, lon1d, lat1d ):
 
     Returns a 3D NumPy array (lon, lat, level) containing those derivative values
 '''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+#njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_df_dy_on_eta_surface( field3d, lon1d, lat1d ):
 
     # Useful constants
@@ -228,7 +228,7 @@ def compute_df_dy_on_eta_surface( field3d, lon1d, lat1d ):
 
     Returns a 3D NumPy array (lon, lat, level) containing those derivative values
 '''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:] ), cache=jit_cache_flag )
+#njit( float64[:,:,:]( float64[:,:,:], float64[:] ), cache=jit_cache_flag )
 def compute_df_dN( field3d, eta1d ):
 
     # Eta intervals
@@ -289,7 +289,7 @@ def compute_df_dN( field3d, eta1d ):
     Returns a 3D NumPy array (lon, lat, level) containing those derivative values,
     except at the topmost and bottommost boundaries (values are NaN there.)
 '''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:] ), cache=jit_cache_flag )
+#njit( float64[:,:,:]( float64[:,:,:], float64[:] ), cache=jit_cache_flag )
 def compute_df2_dN2_on_eta_surface( field3d, eta1d ):
 
     # Eta intervals
@@ -371,7 +371,7 @@ def compute_df2_dN2_on_eta_surface( field3d, eta1d ):
 
     Returns a 3D NumPy array (lon, lat, level) containing those derivative values
 '''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+#njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_d2f_dxdy_on_eta_surface( field3d, lon1d, lat1d ):
 
     # Compute x-direction derivative
@@ -408,7 +408,7 @@ def compute_d2f_dxdy_on_eta_surface( field3d, lon1d, lat1d ):
     Returns a 3D NumPy array (lon, lat, level) containing those derivative values,
     except at the eastmost and westmost boundaries (values are NaN there.)
 '''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+#njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_d2f_dx2_on_eta_surface( field3d, lon1d, lat1d ):
 
     # Useful constants
@@ -493,7 +493,7 @@ def compute_d2f_dx2_on_eta_surface( field3d, lon1d, lat1d ):
     Returns a 3D NumPy array (lon, lat, level) containing those derivative values,
     except at the northmost and southmost boundaries (values are NaN there.)
 '''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+#njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_d2f_dy2_on_eta_surface( field3d, lon1d, lat1d ):
 
     # Useful constants
@@ -600,7 +600,7 @@ def compute_d2f_dy2_on_eta_surface( field3d, lon1d, lat1d ):
 
     Returns a 3D NumPy array (lon, lat, level) containing the partial derivative with respect to pressure. 
 '''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:] ), cache=jit_cache_flag )
+#njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:] ), cache=jit_cache_flag )
 def compute_df_dP( field3d, pres3d ):
 
     # Does pressure increase or decrease with level?
@@ -678,7 +678,7 @@ def compute_df_dP( field3d, pres3d ):
 
     Uses the approach of Kasahara 1974 to compute (df/dx)_P when the data is actually defined on terrain-following coordinates.
 '''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
+#njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_df_dx_on_pres_surface( field3d, alpha_x, lon1d, lat1d, eta1d ):
 
     # Compute x-derivative on eta surface
@@ -719,7 +719,7 @@ def compute_df_dx_on_pres_surface( field3d, alpha_x, lon1d, lat1d, eta1d ):
 
     Uses the approach of Kasahara 1974 to compute (df/dx)_P when the data is actually defined on terrain-following coordinates.
 '''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
+#njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_df_dy_on_pres_surface( field3d, alpha_y, lon1d, lat1d, eta1d ):
 
     # Compute x-derivative on eta surface
@@ -777,7 +777,7 @@ def compute_df_dy_on_pres_surface( field3d, alpha_y, lon1d, lat1d, eta1d ):
                                 - alpha_xy (d/dN)
 
 '''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
+#njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_d2f_dxdy_on_pres_surface( field3d, alpha_x, alpha_y, alpha_xy, lon1d, lat1d, eta1d ):
 
     # Compute the ( d2f / dxdy )_N term
@@ -859,7 +859,7 @@ def compute_d2f_dxdy_on_pres_surface( field3d, alpha_x, alpha_y, alpha_xy, lon1d
                                 - alpha_xx (d/dN)
 
 '''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
+#njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_d2f_dx2_on_pres_surface( field3d, alpha_x, alpha_y, alpha_xx, lon1d, lat1d, eta1d ):
 
     # Compute the ( d2f / dx2 )_N term
@@ -940,7 +940,7 @@ def compute_d2f_dx2_on_pres_surface( field3d, alpha_x, alpha_y, alpha_xx, lon1d,
                                 - alpha_yy (d/dN)
 
 '''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
+#njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_d2f_dy2_on_pres_surface( field3d, alpha_x, alpha_y, alpha_yy, lon1d, lat1d, eta1d ):
 
     # Compute the ( d2f / dy2 )_N term
@@ -1028,7 +1028,7 @@ def compute_d2f_dy2_on_pres_surface( field3d, alpha_x, alpha_y, alpha_yy, lon1d,
 
     Returns a 3D NumPy array (lon, lat, level) of alpha_x values
 '''
-@njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+#njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_alpha_x( eta1d, pres3d, lon1d, lat1d ):
 
     # Generate 3D array of eta values
@@ -1071,7 +1071,7 @@ def compute_alpha_x( eta1d, pres3d, lon1d, lat1d ):
 
     Returns a 3D NumPy array (lon, lat, level) of alpha_y values
 '''
-@njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+#njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_alpha_y( eta1d, pres3d, lon1d, lat1d ):
 
     # Generate 3D array of eta values
@@ -1235,7 +1235,7 @@ def SANITY_CHECK_spatial_derivatives():
     Returns a 3D NumPy array with dimensions (lon+2, lat+2, level) 
 
 '''
-@njit( nbtuple( (float64[:], float64[:], float64[:,:,:]) )( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+#njit( nbtuple( (float64[:], float64[:], float64[:,:,:]) )( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
 def pad_field_due_to_spherical_symmetry( field3d, lon1d, lat1d ): 
 
     # Init array to hold padded values
@@ -1450,7 +1450,7 @@ def SANITY_CHECK_pad_field_due_to_spherical_symmetry():
     8) lat1d (lat)
             1D NumPy array of latitude values (in degrees).
 '''
-@njit( nbtuple( (float64[:,:,:], float64[:,:,:], float64[:,:,:]) )( float64[:,:,:], float64[:,:], float64[:,:], float64[:,:,:], float64[:,:], float64[:,:], float64[:], float64[:]) )
+# #njit( nbtuple( (float64[:,:,:], float64[:,:,:], float64[:,:,:]) )( float64[:,:,:], float64[:,:], float64[:,:], float64[:,:,:], float64[:,:], float64[:,:], float64[:], float64[:]) )
 def diagnose_geostrophic_flow( pres3d, psurf2d, ptop2d, hgt3d, terrain2d, hgttop2d, lon1d, lat1d ):
 
 
@@ -1519,19 +1519,25 @@ def diagnose_geostrophic_flow( pres3d, psurf2d, ptop2d, hgt3d, terrain2d, hgttop
     coriolis_param3d = np.empty( ppres3d.shape, dtype='f8' )
     for k in range( len(peta1d) ):
         coriolis_param3d[:,:,k] =  2 * EARTH_ANGULAR_SPEED * np.sin( DEG_2_RAD * platmesh )
-
     
 
-    # Compute geostrophic flow and return
-    # ------------------------------------
+    # Compute geostrophic flow
+    # ------------------------
     u3d = (
-        compute_df_dy_on_pres_surface( pgeopot3d, alpha_y, plon1d, plat1d, peta1d )[1:-1,1:-1,1:-1]
+        compute_df_dy_on_eta_surface( pgeopot3d, plon1d, plat1d )[1:-1,1:-1,1:-1]
         / coriolis_param3d[1:-1,1:-1,1:-1]
     ) * (-1.0)
     v3d = (
-        compute_df_dx_on_pres_surface( pgeopot3d, alpha_x, plon1d, plat1d, peta1d )[1:-1,1:-1,1:-1]
+        compute_df_dx_on_eta_surface( pgeopot3d, plon1d, plat1d )[1:-1,1:-1,1:-1]
         / coriolis_param3d[1:-1,1:-1,1:-1]
     ) 
+
+
+    # # Remove equatorial geostrophic flow
+    # # ----------------------------------
+    # flag_lat_eq = ( np.abs( lat1d )< 5)
+    # u3d[:,flag_lat_eq,:] = np.nan
+    # v3d[:,flag_lat_eq,:] = np.nan
 
 
     return u3d, v3d
@@ -1556,7 +1562,7 @@ def SANITY_CHECK_geostrophic_flow_diagnosis():
     # Grid settings (must be even numbers)
     nlat = 90
     nlon = nlat * 2
-    nlvl = 2
+    nlvl = 11
 
 
     # Generate grid
@@ -1600,10 +1606,13 @@ def SANITY_CHECK_geostrophic_flow_diagnosis():
 
     # Visualize geostrophic flow and geopotential height
     geopot3d = 9.81 * height3d
-    cnf = plt.contourf( lon1d, lat1d, geopot3d[:,:,1].T, 11, cmap = 'RdBu_r')
+    cnf = plt.contourf( lon1d, lat1d, geopot3d[:,:,10].T, 11, cmap = 'RdBu_r')
     cbar = plt.colorbar(cnf)
-    cbar.ax.ylabel('Geopotential (J/kg)')
-    quiv = plt.quiver( lonmesh[::5,::5], latmesh[::5,::5], u3d[:5,::5,1], v3d[:5,::5,1])
+    cbar.ax.set_ylabel('Geopotential (J/kg)')
+    plt.streamplot( lon1d, lat1d, 
+        (u3d[:,:,10] / (111000 * np.cos( latmesh*PI/180 ))).T, 
+        (v3d[:,:,10]/111000).T, color='k', density=1
+    )
     plt.savefig('check_geostrophic_flow.png')
     plt.close()
 
