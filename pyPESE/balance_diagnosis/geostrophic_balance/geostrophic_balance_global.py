@@ -1542,6 +1542,79 @@ def diagnose_geostrophic_flow( pres3d, psurf2d, ptop2d, hgt3d, terrain2d, hgttop
 
 
 
+'''
+    SANITY CHECK DIAGNOSIS OF GEOSTROPHIC FLOW
+'''
+def SANITY_CHECK_geostrophic_flow_diagnosis():
+
+    # Load python packages for plotting
+    # from matplotlib import use as mpl_use
+    # mpl_use('agg')
+    import matplotlib.pyplot as plt
+    from scipy.optimize import minimize
+
+    # Grid settings (must be even numbers)
+    nlat = 90
+    nlon = nlat * 2
+    nlvl = 2
+
+
+    # Generate grid
+    lat1d =  ( (np.arange( nlat )+0.5 - int(nlat/2)) * 180/nlat ).astype('f8')
+    lon1d =  ( (np.arange( nlon )+0.5 - int(nlon/2)) * 360/nlon ).astype('f8')
+    pres1d = ( ( (np.arange( nlvl +1 ) )[1:] * 980/(nlvl+1) )[::-1] + 20 ).astype('f8') * 100
+
+
+    # Generate 2D meshes for lat, lon and pressure
+    latmesh, lonmesh = np.meshgrid(lat1d, lon1d)
+    psurf2d = ( (latmesh / latmesh) * 1000. ).astype('f8') * 100
+    ptop2d = psurf2d * 0. + 20*100
+
+
+    # Generate zonally and vertically symmetric height fields
+    height3d = np.empty( [nlon, nlat, nlvl], dtype='f8')
+    amplitude = np.log( pres1d[0]/100000 ) * -12000/1.7 / 2
+    meridional_variation = amplitude * np.exp( -0.5 * (latmesh)**2/(30**2) ) 
+    zonal_variation = np.abs(np.sin( 0.5*latmesh * PI/180)) * np.cos(2* lonmesh * PI/180) * amplitude /2
+
+    for kk in range(nlvl):
+        ref_height = np.log( pres1d[kk]/100000 ) * -12000/1.7
+        height3d[:,:,kk] = ref_height + meridional_variation + zonal_variation
+    # --- End of loop over model layers
+
+    # Generate meshes for terrain and model top height
+    terrain2d = latmesh*0
+    hgttop2d = np.log( 2000./100000 ) * -12000/1.7 + meridional_variation + zonal_variation
+    
+    # Construct 3d pressure field
+    pres3d = np.empty( (nlon, nlat, nlvl), dtype='f8')
+    for kk in range(nlvl):
+        pres3d[:,:,kk] = pres1d[kk]
+
+
+    # Generate geostrophic flow
+    u3d, v3d = diagnose_geostrophic_flow( 
+        pres3d, psurf2d, ptop2d, height3d, terrain2d, hgttop2d, lon1d, lat1d 
+    )
+
+
+    # Visualize geostrophic flow and geopotential height
+    geopot3d = 9.81 * height3d
+    cnf = plt.contourf( lon1d, lat1d, geopot3d[:,:,1].T, 11, cmap = 'RdBu_r')
+    cbar = plt.colorbar(cnf)
+    cbar.ax.ylabel('Geopotential (J/kg)')
+    quiv = plt.quiver( lonmesh[::5,::5], latmesh[::5,::5], u3d[:5,::5,1], v3d[:5,::5,1])
+    plt.savefig('check_geostrophic_flow.png')
+    plt.close()
+
+
+    return
+
+
+
+
+
+
 
 
 
@@ -1570,6 +1643,8 @@ if __name__ == '__main__':
     )
 
     SANITY_CHECK_pad_field_due_to_spherical_symmetry()
+
+    SANITY_CHECK_geostrophic_flow_diagnosis()
 
 
     print('meow')
