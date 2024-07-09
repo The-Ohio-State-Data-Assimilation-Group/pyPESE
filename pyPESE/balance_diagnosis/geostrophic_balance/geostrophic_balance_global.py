@@ -93,7 +93,7 @@ jit_cache_flag = False
 
     Returns a 3D NumPy array (lon, lat, level) containing those derivative values
 '''
-#njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+@njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_df_dx_on_eta_surface( field3d, lon1d, lat1d ):
 
     # Useful constants
@@ -162,7 +162,7 @@ def compute_df_dx_on_eta_surface( field3d, lon1d, lat1d ):
 
     Returns a 3D NumPy array (lon, lat, level) containing those derivative values
 '''
-#njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+@njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_df_dy_on_eta_surface( field3d, lon1d, lat1d ):
 
     # Useful constants
@@ -228,7 +228,7 @@ def compute_df_dy_on_eta_surface( field3d, lon1d, lat1d ):
 
     Returns a 3D NumPy array (lon, lat, level) containing those derivative values
 '''
-#njit( float64[:,:,:]( float64[:,:,:], float64[:] ), cache=jit_cache_flag )
+@njit( float64[:,:,:]( float64[:,:,:], float64[:] ), cache=jit_cache_flag )
 def compute_df_dN( field3d, eta1d ):
 
     # Eta intervals
@@ -327,7 +327,7 @@ def compute_df_dN( field3d, eta1d ):
 
     Returns a 3D NumPy array (lon, lat, level) containing the partial derivative with respect to pressure. 
 '''
-#njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:] ), cache=jit_cache_flag )
+@njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:] ), cache=jit_cache_flag )
 def compute_df_dP( field3d, pres3d ):
 
     # Does pressure increase or decrease with level?
@@ -405,7 +405,7 @@ def compute_df_dP( field3d, pres3d ):
 
     Uses the approach of Kasahara 1974 to compute (df/dx)_P when the data is actually defined on terrain-following coordinates.
 '''
-#njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
+@njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_df_dx_on_pres_surface( field3d, alpha_x, lon1d, lat1d, eta1d ):
 
     # Compute x-derivative on eta surface
@@ -446,7 +446,7 @@ def compute_df_dx_on_pres_surface( field3d, alpha_x, lon1d, lat1d, eta1d ):
 
     Uses the approach of Kasahara 1974 to compute (df/dx)_P when the data is actually defined on terrain-following coordinates.
 '''
-#njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
+@njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_df_dy_on_pres_surface( field3d, alpha_y, lon1d, lat1d, eta1d ):
 
     # Compute x-derivative on eta surface
@@ -519,7 +519,7 @@ def compute_df_dy_on_pres_surface( field3d, alpha_y, lon1d, lat1d, eta1d ):
 
     Returns a 3D NumPy array (lon, lat, level) of alpha_x values
 '''
-#njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+@njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_alpha_x( eta1d, pres3d, lon1d, lat1d ):
 
     # Generate 3D array of eta values
@@ -562,7 +562,7 @@ def compute_alpha_x( eta1d, pres3d, lon1d, lat1d ):
 
     Returns a 3D NumPy array (lon, lat, level) of alpha_y values
 '''
-#njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+@njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_alpha_y( eta1d, pres3d, lon1d, lat1d ):
 
     # Generate 3D array of eta values
@@ -726,7 +726,7 @@ def SANITY_CHECK_spatial_derivatives():
     Returns a 3D NumPy array with dimensions (lon+2, lat+2, level) 
 
 '''
-#njit( nbtuple( (float64[:], float64[:], float64[:,:,:]) )( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+@njit( nbtuple( (float64[:], float64[:], float64[:,:,:]) )( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
 def pad_field_due_to_spherical_symmetry( field3d, lon1d, lat1d ): 
 
     # Init array to hold padded values
@@ -941,7 +941,7 @@ def SANITY_CHECK_pad_field_due_to_spherical_symmetry():
     8) lat1d (lat)
             1D NumPy array of latitude values (in degrees).
 '''
-# #njit( nbtuple( (float64[:,:,:], float64[:,:,:], float64[:,:,:]) )( float64[:,:,:], float64[:,:], float64[:,:], float64[:,:,:], float64[:,:], float64[:,:], float64[:], float64[:]) )
+# @njit( nbtuple( (float64[:,:,:], float64[:,:,:], float64[:,:,:]) )( float64[:,:,:], float64[:,:], float64[:,:], float64[:,:,:], float64[:,:], float64[:,:], float64[:], float64[:]) )
 def diagnose_geostrophic_flow( pres3d, psurf2d, ptop2d, hgt3d, terrain2d, hgttop2d, lon1d, lat1d ):
 
 
