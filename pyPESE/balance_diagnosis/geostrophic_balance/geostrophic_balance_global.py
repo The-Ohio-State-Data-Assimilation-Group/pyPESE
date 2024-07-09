@@ -1096,144 +1096,6 @@ def compute_alpha_y( eta1d, pres3d, lon1d, lat1d ):
 
 
 
-
-# '''
-#     Function to compute (dN/dP) * ( (d2P)/(dy dx) )_N (i.e., the constant field alpha_xy)
-
-#     Inputs:
-#     -------
-#     1) eta1d  (level)
-#             1D NumPy array of eta coordinate values (recall: eta is the terrain-following vertical coordinate)
-#     2) pres3d (lon, lat, level)
-#             3D NumPy array of pressure values.
-#     3) lon1d (lon)
-#             1D NumPy array of longitude values (in degrees).
-#     4) lat1d (lat)
-#             1D NumPy array of latitude values (in degrees).
-
-#     Returns a 3D NumPy array (lon, lat, level) of alpha_y values
-# '''
-# @njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
-# def compute_alpha_xy( eta1d, pres3d, lon1d, lat1d ):
-
-#     # Generate 3D array of eta values
-#     eta3d = np.empty( pres3d.shape, dtype='f8' )
-#     for k, eta in enumerate( eta1d ):
-#         eta3d[:,:,k] = eta1d[k]
-
-#     # Compute dN/dP
-#     dN_dP = compute_df_dP( eta3d, pres3d )
-
-#     # Compute (dP/dx)_N
-#     dP_dx_on_eta_lvls = compute_df_dx_on_eta_surface( 
-#         pres3d, lon1d, lat1d
-#     )
-
-#     # Compute ( (d2P)/(dx dy) )_N
-#     d2P_dxdy_on_eta_lvls = compute_df_dy_on_eta_surface( 
-#         dP_dx_on_eta_lvls, lon1d, lat1d
-#     )
-
-#     # Return the alpha_x values
-#     return dN_dP * d2P_dxdy_on_eta_lvls
-
-
-
-
-
-
-
-
-# '''
-#     Function to compute (dN/dP) * ( (d2P)/(dx2) )_N (i.e., the constant field alpha_xx)
-
-#     Inputs:
-#     -------
-#     1) eta1d  (level)
-#             1D NumPy array of eta coordinate values (recall: eta is the terrain-following vertical coordinate)
-#     2) pres3d (lon, lat, level)
-#             3D NumPy array of pressure values.
-#     3) lon1d (lon)
-#             1D NumPy array of longitude values (in degrees).
-#     4) lat1d (lat)
-#             1D NumPy array of latitude values (in degrees).
-
-#     Returns a 3D NumPy array (lon, lat, level) of alpha_y values
-# '''
-# @njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
-# def compute_alpha_xx( eta1d, pres3d, lon1d, lat1d ):
-
-#     # Generate 3D array of eta values
-#     eta3d = np.empty( pres3d.shape, dtype='f8' )
-#     for k, eta in enumerate( eta1d ):
-#         eta3d[:,:,k] = eta1d[k]
-
-#     # Compute dN/dP
-#     dN_dP = compute_df_dP( eta3d, pres3d )
-
-#     # Compute (dP/dx)_N
-#     dP_dx_on_eta_lvls = compute_df_dx_on_eta_surface( 
-#         pres3d, lon1d, lat1d
-#     )
-
-#     # Compute ( (d2P)/(dx2) )_N
-#     d2P_dx2_on_eta_lvls = compute_df_dx_on_eta_surface( 
-#         dP_dx_on_eta_lvls, lon1d, lat1d
-#     )
-
-#     # Return the alpha_x values
-#     return dN_dP * d2P_dx2_on_eta_lvls
-
-
-
-
-
-
-
-
-# '''
-#     Function to compute (dN/dP) * ( (d2P)/(dy2) )_N (i.e., the constant field alpha_yy)
-
-#     Inputs:
-#     -------
-#     1) eta1d  (level)
-#             1D NumPy array of eta coordinate values (recall: eta is the terrain-following vertical coordinate)
-#     2) pres3d (lon, lat, level)
-#             3D NumPy array of pressure values.
-#     3) lon1d (lon)
-#             1D NumPy array of longitude values (in degrees).
-#     4) lat1d (lat)
-#             1D NumPy array of latitude values (in degrees).
-
-#     Returns a 3D NumPy array (lon, lat, level) of alpha_y values
-# '''
-# @njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
-# def compute_alpha_yy( eta1d, pres3d, lon1d, lat1d ):
-
-#     # Generate 3D array of eta values
-#     eta3d = np.empty( pres3d.shape, dtype='f8' )
-#     for k, eta in enumerate( eta1d ):
-#         eta3d[:,:,k] = eta1d[k]
-
-#     # Compute dN/dP
-#     dN_dP = compute_df_dP( eta3d, pres3d )
-
-#     # Compute (dP/dy)_N
-#     dP_dy_on_eta_lvls = compute_df_dy_on_eta_surface( 
-#         pres3d, lon1d, lat1d
-#     )
-
-#     # Compute ( (d2P)/(dy2) )_N
-#     d2P_dy2_on_eta_lvls = compute_df_dy_on_eta_surface( 
-#         dP_dy_on_eta_lvls, lon1d, lat1d
-#     )
-
-#     # Return the alpha_x values
-#     return dN_dP * d2P_dy2_on_eta_lvls
-
-
-
-
 '''
     Function to sanity check derivatives
 '''
@@ -1284,9 +1146,6 @@ def SANITY_CHECK_spatial_derivatives():
     # Compute all alpha values
     alpha_x  =  compute_alpha_x( eta_lvls, test_pres, lon, lat )
     alpha_y  =  compute_alpha_y( eta_lvls, test_pres, lon, lat )
-    # alpha_xx = compute_alpha_xx( eta_lvls, test_pres, lon, lat )
-    # alpha_yy = compute_alpha_yy( eta_lvls, test_pres, lon, lat )
-    # alpha_xy = compute_alpha_xy( eta_lvls, test_pres, lon, lat )
 
     # Location to execute isobaric calculations is [10,5,30]
     plvl_targ = test_pres[10,5,4]
@@ -1315,29 +1174,6 @@ def SANITY_CHECK_spatial_derivatives():
     print( 'Sanity checking df/dy on isobaric surface (correct value is approximately %e) ' % (true_val[10,5,1]) )
     print( test_val[10,5,4] )
     print("")
-
-
-    # # Check (d2f/dx2)_P at desired location
-    # test_val = compute_d2f_dx2_on_pres_surface( data_on_eta_lvl, alpha_x, alpha_y, alpha_xx, lon, lat, eta_lvls)
-    # true_val = compute_d2f_dx2_on_eta_surface( data_on_plvls, lon, lat )
-    # print( 'Sanity checking d2f/dx2 on isobaric surface (correct value is approximately %e) ' % (true_val[10,5,1]) )
-    # print( test_val[10,5,4] )
-    # print("")
-
-    # # Check (d2f/dy2)_P at desired location
-    # test_val = compute_d2f_dy2_on_pres_surface( data_on_eta_lvl, alpha_x, alpha_y, alpha_yy, lon, lat, eta_lvls)
-    # true_val = compute_d2f_dy2_on_eta_surface( data_on_plvls, lon, lat )
-    # print( 'Sanity checking d2f/dy2 on isobaric surface (correct value is approximately %e) ' % (true_val[10,5,1]) )
-    # print( test_val[10,5,4] )
-    # print("")
-
-
-    # # Check (d2f/dxdy)_P at desired location
-    # test_val = compute_d2f_dxdy_on_pres_surface( data_on_eta_lvl, alpha_x, alpha_y, alpha_xy, lon, lat, eta_lvls)
-    # true_val = compute_d2f_dxdy_on_eta_surface( data_on_plvls, lon, lat )
-    # print( 'Sanity checking d2f/dxdy on isobaric surface (correct value is approximately %e) ' % (true_val[10,5,1]) )
-    # print( test_val[10,5,4] )
-    # print("")
 
     return
 
@@ -1591,14 +1427,7 @@ def SANITY_CHECK_pad_field_due_to_spherical_symmetry():
 
 
 '''
-    FUNCTIONS TO DIAGNOSE GEOSTROPHIC FLOW
-'''
-
-
-
-
-'''
-    Function to compute the constants needed to diagnose geostrophic flow on terrain-following coordinates
+    FUNCTION TO DIAGNOSE GEOSTROPHIC FLOW ON TERRAIN-FOLLOWING COORDINATES
 
     All inputs must be in SI units!!
 
@@ -1621,7 +1450,9 @@ def SANITY_CHECK_pad_field_due_to_spherical_symmetry():
     8) lat1d (lat)
             1D NumPy array of latitude values (in degrees).
 '''
-def compute_constants_needed_to_diagnose_geostrophic_flow( pres3d, psurf2d, ptop2d, hgt3d, terrain2d, hgttop2d, lon1d, lat1d ):
+@njit( nbtuple( (float64[:,:,:], float64[:,:,:], float64[:,:,:]) )( float64[:,:,:], float64[:,:], float64[:,:], float64[:,:,:], float64[:,:], float64[:,:], float64[:], float64[:]) )
+def diagnose_geostrophic_flow( pres3d, psurf2d, ptop2d, hgt3d, terrain2d, hgttop2d, lon1d, lat1d ):
+
 
     # Useful constants
     DEG_2_RAD = PI/180
@@ -1675,6 +1506,10 @@ def compute_constants_needed_to_diagnose_geostrophic_flow( pres3d, psurf2d, ptop
     pgeopot3d = phgt3d * GRAVITY_ACCEL 
 
 
+
+    # Compute coefficients needed to diagnose geostrophic flow
+    # ---------------------------------------------------------
+
     # Compute all alpha values
     alpha_x  =  compute_alpha_x( peta1d, ppres3d, plon1d, plat1d )
     alpha_y  =  compute_alpha_y( peta1d, ppres3d, plon1d, plat1d )
@@ -1682,31 +1517,24 @@ def compute_constants_needed_to_diagnose_geostrophic_flow( pres3d, psurf2d, ptop
     # Generate coriolis parameter at all locations
     platmesh, plonmesh = np.meshgrid( plat1d, plon1d )
     coriolis_param3d = np.empty( ppres3d.shape, dtype='f8' )
+    for k in range( len(peta1d) ):
+        coriolis_param3d[:,:,k] =  2 * EARTH_ANGULAR_SPEED * np.sin( DEG_2_RAD * platmesh )
 
     
-    # Dictionary of padded constants
-    padded_constants_dict = {}
-    padded_constants_dict['coriolis']                   = coriolis_param3d * 1
-    padded_constants_dict['alpha_x' ]                   = alpha_x * 1
-    padded_constants_dict['alpha_y' ]                   = alpha_y * 1
-    padded_constants_dict['plat1d']                     = plat1d * 1
-    padded_constants_dict['plon1d']                     = plon1d * 1
-    padded_constants_dict['peta1d']                     = peta1d * 1
+
+    # Compute geostrophic flow and return
+    # ------------------------------------
+    u3d = (
+        compute_df_dy_on_pres_surface( pgeopot3d, alpha_y, plon1d, plat1d, peta1d )[1:-1,1:-1,1:-1]
+        / coriolis_param3d[1:-1,1:-1,1:-1]
+    ) * (-1.0)
+    v3d = (
+        compute_df_dx_on_pres_surface( pgeopot3d, alpha_x, plon1d, plat1d, peta1d )[1:-1,1:-1,1:-1]
+        / coriolis_param3d[1:-1,1:-1,1:-1]
+    ) 
 
 
-    return padded_constants_dict
-
-
-
-
-
-
-
-
-
-
-
-
+    return u3d, v3d
 
 
 
