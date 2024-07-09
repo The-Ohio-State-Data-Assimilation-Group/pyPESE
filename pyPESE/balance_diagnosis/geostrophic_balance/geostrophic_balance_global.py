@@ -1097,92 +1097,45 @@ def compute_alpha_y( eta1d, pres3d, lon1d, lat1d ):
 
 
 
-'''
-    Function to compute (dN/dP) * ( (d2P)/(dy dx) )_N (i.e., the constant field alpha_xy)
+# '''
+#     Function to compute (dN/dP) * ( (d2P)/(dy dx) )_N (i.e., the constant field alpha_xy)
 
-    Inputs:
-    -------
-    1) eta1d  (level)
-            1D NumPy array of eta coordinate values (recall: eta is the terrain-following vertical coordinate)
-    2) pres3d (lon, lat, level)
-            3D NumPy array of pressure values.
-    3) lon1d (lon)
-            1D NumPy array of longitude values (in degrees).
-    4) lat1d (lat)
-            1D NumPy array of latitude values (in degrees).
+#     Inputs:
+#     -------
+#     1) eta1d  (level)
+#             1D NumPy array of eta coordinate values (recall: eta is the terrain-following vertical coordinate)
+#     2) pres3d (lon, lat, level)
+#             3D NumPy array of pressure values.
+#     3) lon1d (lon)
+#             1D NumPy array of longitude values (in degrees).
+#     4) lat1d (lat)
+#             1D NumPy array of latitude values (in degrees).
 
-    Returns a 3D NumPy array (lon, lat, level) of alpha_y values
-'''
-@njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
-def compute_alpha_xy( eta1d, pres3d, lon1d, lat1d ):
+#     Returns a 3D NumPy array (lon, lat, level) of alpha_y values
+# '''
+# @njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+# def compute_alpha_xy( eta1d, pres3d, lon1d, lat1d ):
 
-    # Generate 3D array of eta values
-    eta3d = np.empty( pres3d.shape, dtype='f8' )
-    for k, eta in enumerate( eta1d ):
-        eta3d[:,:,k] = eta1d[k]
+#     # Generate 3D array of eta values
+#     eta3d = np.empty( pres3d.shape, dtype='f8' )
+#     for k, eta in enumerate( eta1d ):
+#         eta3d[:,:,k] = eta1d[k]
 
-    # Compute dN/dP
-    dN_dP = compute_df_dP( eta3d, pres3d )
+#     # Compute dN/dP
+#     dN_dP = compute_df_dP( eta3d, pres3d )
 
-    # Compute (dP/dx)_N
-    dP_dx_on_eta_lvls = compute_df_dx_on_eta_surface( 
-        pres3d, lon1d, lat1d
-    )
+#     # Compute (dP/dx)_N
+#     dP_dx_on_eta_lvls = compute_df_dx_on_eta_surface( 
+#         pres3d, lon1d, lat1d
+#     )
 
-    # Compute ( (d2P)/(dx dy) )_N
-    d2P_dxdy_on_eta_lvls = compute_df_dy_on_eta_surface( 
-        dP_dx_on_eta_lvls, lon1d, lat1d
-    )
+#     # Compute ( (d2P)/(dx dy) )_N
+#     d2P_dxdy_on_eta_lvls = compute_df_dy_on_eta_surface( 
+#         dP_dx_on_eta_lvls, lon1d, lat1d
+#     )
 
-    # Return the alpha_x values
-    return dN_dP * d2P_dxdy_on_eta_lvls
-
-
-
-
-
-
-
-
-'''
-    Function to compute (dN/dP) * ( (d2P)/(dx2) )_N (i.e., the constant field alpha_xx)
-
-    Inputs:
-    -------
-    1) eta1d  (level)
-            1D NumPy array of eta coordinate values (recall: eta is the terrain-following vertical coordinate)
-    2) pres3d (lon, lat, level)
-            3D NumPy array of pressure values.
-    3) lon1d (lon)
-            1D NumPy array of longitude values (in degrees).
-    4) lat1d (lat)
-            1D NumPy array of latitude values (in degrees).
-
-    Returns a 3D NumPy array (lon, lat, level) of alpha_y values
-'''
-@njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
-def compute_alpha_xx( eta1d, pres3d, lon1d, lat1d ):
-
-    # Generate 3D array of eta values
-    eta3d = np.empty( pres3d.shape, dtype='f8' )
-    for k, eta in enumerate( eta1d ):
-        eta3d[:,:,k] = eta1d[k]
-
-    # Compute dN/dP
-    dN_dP = compute_df_dP( eta3d, pres3d )
-
-    # Compute (dP/dx)_N
-    dP_dx_on_eta_lvls = compute_df_dx_on_eta_surface( 
-        pres3d, lon1d, lat1d
-    )
-
-    # Compute ( (d2P)/(dx2) )_N
-    d2P_dx2_on_eta_lvls = compute_df_dx_on_eta_surface( 
-        dP_dx_on_eta_lvls, lon1d, lat1d
-    )
-
-    # Return the alpha_x values
-    return dN_dP * d2P_dx2_on_eta_lvls
+#     # Return the alpha_x values
+#     return dN_dP * d2P_dxdy_on_eta_lvls
 
 
 
@@ -1191,45 +1144,92 @@ def compute_alpha_xx( eta1d, pres3d, lon1d, lat1d ):
 
 
 
-'''
-    Function to compute (dN/dP) * ( (d2P)/(dy2) )_N (i.e., the constant field alpha_yy)
+# '''
+#     Function to compute (dN/dP) * ( (d2P)/(dx2) )_N (i.e., the constant field alpha_xx)
 
-    Inputs:
-    -------
-    1) eta1d  (level)
-            1D NumPy array of eta coordinate values (recall: eta is the terrain-following vertical coordinate)
-    2) pres3d (lon, lat, level)
-            3D NumPy array of pressure values.
-    3) lon1d (lon)
-            1D NumPy array of longitude values (in degrees).
-    4) lat1d (lat)
-            1D NumPy array of latitude values (in degrees).
+#     Inputs:
+#     -------
+#     1) eta1d  (level)
+#             1D NumPy array of eta coordinate values (recall: eta is the terrain-following vertical coordinate)
+#     2) pres3d (lon, lat, level)
+#             3D NumPy array of pressure values.
+#     3) lon1d (lon)
+#             1D NumPy array of longitude values (in degrees).
+#     4) lat1d (lat)
+#             1D NumPy array of latitude values (in degrees).
 
-    Returns a 3D NumPy array (lon, lat, level) of alpha_y values
-'''
-@njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
-def compute_alpha_yy( eta1d, pres3d, lon1d, lat1d ):
+#     Returns a 3D NumPy array (lon, lat, level) of alpha_y values
+# '''
+# @njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+# def compute_alpha_xx( eta1d, pres3d, lon1d, lat1d ):
 
-    # Generate 3D array of eta values
-    eta3d = np.empty( pres3d.shape, dtype='f8' )
-    for k, eta in enumerate( eta1d ):
-        eta3d[:,:,k] = eta1d[k]
+#     # Generate 3D array of eta values
+#     eta3d = np.empty( pres3d.shape, dtype='f8' )
+#     for k, eta in enumerate( eta1d ):
+#         eta3d[:,:,k] = eta1d[k]
 
-    # Compute dN/dP
-    dN_dP = compute_df_dP( eta3d, pres3d )
+#     # Compute dN/dP
+#     dN_dP = compute_df_dP( eta3d, pres3d )
 
-    # Compute (dP/dy)_N
-    dP_dy_on_eta_lvls = compute_df_dy_on_eta_surface( 
-        pres3d, lon1d, lat1d
-    )
+#     # Compute (dP/dx)_N
+#     dP_dx_on_eta_lvls = compute_df_dx_on_eta_surface( 
+#         pres3d, lon1d, lat1d
+#     )
 
-    # Compute ( (d2P)/(dy2) )_N
-    d2P_dy2_on_eta_lvls = compute_df_dy_on_eta_surface( 
-        dP_dy_on_eta_lvls, lon1d, lat1d
-    )
+#     # Compute ( (d2P)/(dx2) )_N
+#     d2P_dx2_on_eta_lvls = compute_df_dx_on_eta_surface( 
+#         dP_dx_on_eta_lvls, lon1d, lat1d
+#     )
 
-    # Return the alpha_x values
-    return dN_dP * d2P_dy2_on_eta_lvls
+#     # Return the alpha_x values
+#     return dN_dP * d2P_dx2_on_eta_lvls
+
+
+
+
+
+
+
+
+# '''
+#     Function to compute (dN/dP) * ( (d2P)/(dy2) )_N (i.e., the constant field alpha_yy)
+
+#     Inputs:
+#     -------
+#     1) eta1d  (level)
+#             1D NumPy array of eta coordinate values (recall: eta is the terrain-following vertical coordinate)
+#     2) pres3d (lon, lat, level)
+#             3D NumPy array of pressure values.
+#     3) lon1d (lon)
+#             1D NumPy array of longitude values (in degrees).
+#     4) lat1d (lat)
+#             1D NumPy array of latitude values (in degrees).
+
+#     Returns a 3D NumPy array (lon, lat, level) of alpha_y values
+# '''
+# @njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+# def compute_alpha_yy( eta1d, pres3d, lon1d, lat1d ):
+
+#     # Generate 3D array of eta values
+#     eta3d = np.empty( pres3d.shape, dtype='f8' )
+#     for k, eta in enumerate( eta1d ):
+#         eta3d[:,:,k] = eta1d[k]
+
+#     # Compute dN/dP
+#     dN_dP = compute_df_dP( eta3d, pres3d )
+
+#     # Compute (dP/dy)_N
+#     dP_dy_on_eta_lvls = compute_df_dy_on_eta_surface( 
+#         pres3d, lon1d, lat1d
+#     )
+
+#     # Compute ( (d2P)/(dy2) )_N
+#     d2P_dy2_on_eta_lvls = compute_df_dy_on_eta_surface( 
+#         dP_dy_on_eta_lvls, lon1d, lat1d
+#     )
+
+#     # Return the alpha_x values
+#     return dN_dP * d2P_dy2_on_eta_lvls
 
 
 
@@ -1284,9 +1284,9 @@ def SANITY_CHECK_spatial_derivatives():
     # Compute all alpha values
     alpha_x  =  compute_alpha_x( eta_lvls, test_pres, lon, lat )
     alpha_y  =  compute_alpha_y( eta_lvls, test_pres, lon, lat )
-    alpha_xx = compute_alpha_xx( eta_lvls, test_pres, lon, lat )
-    alpha_yy = compute_alpha_yy( eta_lvls, test_pres, lon, lat )
-    alpha_xy = compute_alpha_xy( eta_lvls, test_pres, lon, lat )
+    # alpha_xx = compute_alpha_xx( eta_lvls, test_pres, lon, lat )
+    # alpha_yy = compute_alpha_yy( eta_lvls, test_pres, lon, lat )
+    # alpha_xy = compute_alpha_xy( eta_lvls, test_pres, lon, lat )
 
     # Location to execute isobaric calculations is [10,5,30]
     plvl_targ = test_pres[10,5,4]
@@ -1317,29 +1317,58 @@ def SANITY_CHECK_spatial_derivatives():
     print("")
 
 
-    # Check (d2f/dx2)_P at desired location
-    test_val = compute_d2f_dx2_on_pres_surface( data_on_eta_lvl, alpha_x, alpha_y, alpha_xx, lon, lat, eta_lvls)
-    true_val = compute_d2f_dx2_on_eta_surface( data_on_plvls, lon, lat )
-    print( 'Sanity checking d2f/dx2 on isobaric surface (correct value is approximately %e) ' % (true_val[10,5,1]) )
-    print( test_val[10,5,4] )
-    print("")
+    # # Check (d2f/dx2)_P at desired location
+    # test_val = compute_d2f_dx2_on_pres_surface( data_on_eta_lvl, alpha_x, alpha_y, alpha_xx, lon, lat, eta_lvls)
+    # true_val = compute_d2f_dx2_on_eta_surface( data_on_plvls, lon, lat )
+    # print( 'Sanity checking d2f/dx2 on isobaric surface (correct value is approximately %e) ' % (true_val[10,5,1]) )
+    # print( test_val[10,5,4] )
+    # print("")
 
-    # Check (d2f/dy2)_P at desired location
-    test_val = compute_d2f_dy2_on_pres_surface( data_on_eta_lvl, alpha_x, alpha_y, alpha_yy, lon, lat, eta_lvls)
-    true_val = compute_d2f_dy2_on_eta_surface( data_on_plvls, lon, lat )
-    print( 'Sanity checking d2f/dy2 on isobaric surface (correct value is approximately %e) ' % (true_val[10,5,1]) )
-    print( test_val[10,5,4] )
-    print("")
+    # # Check (d2f/dy2)_P at desired location
+    # test_val = compute_d2f_dy2_on_pres_surface( data_on_eta_lvl, alpha_x, alpha_y, alpha_yy, lon, lat, eta_lvls)
+    # true_val = compute_d2f_dy2_on_eta_surface( data_on_plvls, lon, lat )
+    # print( 'Sanity checking d2f/dy2 on isobaric surface (correct value is approximately %e) ' % (true_val[10,5,1]) )
+    # print( test_val[10,5,4] )
+    # print("")
 
 
-    # Check (d2f/dxdy)_P at desired location
-    test_val = compute_d2f_dxdy_on_pres_surface( data_on_eta_lvl, alpha_x, alpha_y, alpha_xy, lon, lat, eta_lvls)
-    true_val = compute_d2f_dxdy_on_eta_surface( data_on_plvls, lon, lat )
-    print( 'Sanity checking d2f/dxdy on isobaric surface (correct value is approximately %e) ' % (true_val[10,5,1]) )
-    print( test_val[10,5,4] )
-    print("")
+    # # Check (d2f/dxdy)_P at desired location
+    # test_val = compute_d2f_dxdy_on_pres_surface( data_on_eta_lvl, alpha_x, alpha_y, alpha_xy, lon, lat, eta_lvls)
+    # true_val = compute_d2f_dxdy_on_eta_surface( data_on_plvls, lon, lat )
+    # print( 'Sanity checking d2f/dxdy on isobaric surface (correct value is approximately %e) ' % (true_val[10,5,1]) )
+    # print( test_val[10,5,4] )
+    # print("")
 
     return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1445,7 +1474,6 @@ def pad_field_due_to_spherical_symmetry( field3d, lon1d, lat1d ):
 
 
 
-
 '''
     Function to sanity check the spherical symmetry padding function
 '''
@@ -1514,112 +1542,39 @@ def SANITY_CHECK_pad_field_due_to_spherical_symmetry():
 
 
 
-'''
-    UNDER-THE-HOOD EAGER-COMPILABLE FUNCTIONS USED TO EVALUATE COST FUNCTION AND GRADIENT OF COST FUNCTION
-'''
 
 
 
-'''
-    Function to evaluate residuals of Charney (1955) nonlinear balance
-
-    Input:
-    ------
-    1) pstreamfunc3d                (lon+2, lat+2, layer+2)
-            3D NumPy array of padded streamfunction values
-
-    2) alpha_x3d                    (lon+2, lat+2, layer+2)
-            3D NumPy array of padded alpha_x values (array in padded_constants_dict['alpha_x'])
-
-    3) alpha_y3d                    (lon+2, lat+2, layer+2)
-            3D NumPy array of padded alpha_y values (array in padded_constants_dict['alpha_y'])
-
-    4) alpha_xx3d                   (lon+2, lat+2, layer+2)
-            3D NumPy array of padded alpha_xx values (array in padded_constants_dict['alpha_xx'])
-
-    5) alpha_yy3d                   (lon+2, lat+2, layer+2)
-            3D NumPy array of padded alpha_xy values (array in padded_constants_dict['alpha_yy'])
-
-    6) alpha_xy3d                   (lon+2, lat+2, layer+2)
-            3D NumPy array of padded alpha_xy values (array in padded_constants_dict['alpha_xy'])
-
-    7) coriolis_param3d             (lon+2, lat+2, layer+2)
-            3D NumPy array of padded coriolis parameter values (array in padded_constants_dict['coriolis'])
-
-    8) ygrad_coriolis_param3d       (lon+2, lat+2, layer+2)
-            3D NumPy array of padded coriolis beta parameter values (array in padded_constants_dict['coriolis ygrad'])
-
-    9) fscaled_laplacian_geopot3d   (lon+2, lat+2, layer+2)
-            3D NumPy array of laplacian(geopot)/f (array in padded_constants_dict['f-scaled laplacian geopot'])
-    
-    10) plon1d                      (lon+2)
-            1D NumPy array of padded longitude values (in degrees).
-
-    11) plat1d                      (lat+2)
-            1D NumPy array of padded latitude values (in degrees).
-    
-    12) peta1d                      (layers+2)
-            1D NumPy array of padded eta values.    
 
 
-    Returns a 3D NumPy array (lon, lat, layer) containing the residuals of the nonlinear balance equation at
-    every point on the lat x lon x layer grid.
-'''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ) )
-def eval_nonlinear_balance_residuals( pstreamfunc3d, alpha_x3d, alpha_y3d, alpha_xx3d, alpha_xy3d, alpha_yy3d, coriolis_param3d, ygrad_coriolis_param3d, fscaled_laplacian_geopot3d, plon1d, plat1d, peta1d  ):
-
-    # Compute derivatives of the streamfunction
-    # -----------------------------------------
-    dpsi_dy = compute_df_dy_on_pres_surface( 
-                    pstreamfunc3d, alpha_x3d, plon1d, plat1d, peta1d
-    )
-    d2psi_dy2 = compute_d2f_dy2_on_pres_surface(  
-                    pstreamfunc3d, alpha_x3d, alpha_y3d, alpha_yy3d, plon1d, plat1d, peta1d 
-    )
-    d2psi_dxdy = compute_d2f_dxdy_on_pres_surface(  
-                    pstreamfunc3d, alpha_x3d, alpha_y3d, alpha_xy3d, plon1d, plat1d, peta1d 
-    )
-    d2psi_dx2 = compute_d2f_dx2_on_pres_surface(  
-                    pstreamfunc3d, alpha_x3d, alpha_y3d, alpha_xx3d, plon1d, plat1d, peta1d 
-    )
 
 
-    # Unpadded dimensions
-    nlon = len(plon1d) - 2
-    nlat = len(plat1d) - 2
-    neta = len(peta1d) - 2
 
 
-    # Evaluate residuals of nonlinear balance equations
-    # --------------------------------------------------
-    # Init array
-    residuals = np.zeros( (nlon, nlat, neta), dtype='f8' )
-    
-    # Evaluate laplacian of streamfunction
-    residuals += d2psi_dx2[1:-1,1:-1,1:-1] + d2psi_dy2[1:-1,1:-1,1:-1]
-
-    # # Evaluate grad(psi) dot grad(f)
-    # residuals += dpsi_dy[1:-1,1:-1,1:-1] * ygrad_coriolis_param3d[1:-1,1:-1,1:-1]
-
-    # Evaluate "advection term"
-    term = np.power( d2psi_dxdy[1:-1,1:-1,1:-1], 2) - d2psi_dx2[1:-1,1:-1,1:-1] * d2psi_dy2[1:-1,1:-1,1:-1] 
-    term *= 2/coriolis_param3d[1:-1,1:-1,1:-1]
-    residuals -= term
-
-    # Evaluate geopotential term
-    residuals -= fscaled_laplacian_geopot3d[1:-1,1:-1,1:-1]
-
-    # print( residuals.min(), np.percentile( residuals, 25), np.median( residuals), np.percentile(residuals, 75), residuals.max())
-    
-
-    # Remap the nonlinear balance evaluations into vector and return
-    # --------------------------------------------------------------
-    rescale_factor = np.mean( np.abs( fscaled_laplacian_geopot3d[1:-1,1:-1,1:-1] ) ) 
-
-    return residuals / rescale_factor
 
 
-   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1636,232 +1591,14 @@ def eval_nonlinear_balance_residuals( pstreamfunc3d, alpha_x3d, alpha_y3d, alpha
 
 
 '''
-    Function to pad streamfunction
-'''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ) )
-def pad_streamfunc( streamfunc3d, lon1d, lat1d ):
-
-
-    # Dimensions of unpadded arrays
-    nlon , nlat, neta = streamfunc3d.shape
-
-
-    # Generate padded 3D streamfunciton array
-    # ---------------------------------------
-    # Init array
-    pstreamfunc3d = np.empty( (nlon+2, nlat+2, neta+2), dtype='f8' )
-    pstreamfunc3d[1:-1,1:-1,1:-1] = streamfunc3d
-
-    # Topmost boundary values for streamfunction (no slip condition)
-    pstreamfunc3d[1:-1,1:-1,-1] = pstreamfunc3d[1:-1,1:-1,-2]
-
-    # Bottommost boundary values for streamfunction (no slip condition)
-    pstreamfunc3d[1:-1,1:-1,0] = pstreamfunc3d[1:-1,1:-1,1]
-
-    # Spherical symmetry padding
-    plon1d, plat1d, pstreamfunc3d[:,:,:] = pad_field_due_to_spherical_symmetry( pstreamfunc3d[1:-1,1:-1,:], lon1d, lat1d)
-    
-    return pstreamfunc3d
-
-
-
-
-
-
-
-
-
-'''
-    Function to evaluate gradient of cost function
-
-    Input:
-    ------
-    1) pstreamfunc3d                (lon+2, lat+2, layer+2)
-            3D NumPy array of padded streamfunction values
-
-    2) alpha_x3d                    (lon+2, lat+2, layer+2)
-            3D NumPy array of padded alpha_x values (array in padded_constants_dict['alpha_x'])
-
-    3) alpha_y3d                    (lon+2, lat+2, layer+2)
-            3D NumPy array of padded alpha_y values (array in padded_constants_dict['alpha_y'])
-
-    4) alpha_xx3d                   (lon+2, lat+2, layer+2)
-            3D NumPy array of padded alpha_xx values (array in padded_constants_dict['alpha_xx'])
-
-    5) alpha_yy3d                   (lon+2, lat+2, layer+2)
-            3D NumPy array of padded alpha_xy values (array in padded_constants_dict['alpha_yy'])
-
-    6) alpha_xy3d                   (lon+2, lat+2, layer+2)
-            3D NumPy array of padded alpha_xy values (array in padded_constants_dict['alpha_xy'])
-
-    7) coriolis_param3d             (lon+2, lat+2, layer+2)
-            3D NumPy array of padded coriolis parameter values (array in padded_constants_dict['coriolis'])
-
-    8) ygrad_coriolis_param3d       (lon+2, lat+2, layer+2)
-            3D NumPy array of padded coriolis beta parameter values (array in padded_constants_dict['coriolis ygrad'])
-
-    9) fscaled_laplacian_geopot3d   (lon+2, lat+2, layer+2)
-            3D NumPy array of laplacian(geopot)/f (array in padded_constants_dict['f-scaled laplacian geopot'])
-    
-    10) plon1d                      (lon+2)
-            1D NumPy array of padded longitude values (in degrees).
-
-    11) plat1d                      (lat+2)
-            1D NumPy array of padded latitude values (in degrees).
-    
-    12) peta1d                      (layers+2)
-            1D NumPy array of padded eta values.    
-
-
-    Returns a 1D NumPy array (lon * lat * layer) containing the gradient of the cost function
-'''
-@njit( float64[:]( float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ) )
-def fast_eval_cost_grad( pstreamfunc3d, alpha_x3d, alpha_y3d, alpha_xx3d, alpha_xy3d, alpha_yy3d, coriolis_param3d, ygrad_coriolis_param3d, fscaled_laplacian_geopot3d, plon1d, plat1d, peta1d  ):
-
-    # Unpadded dimensions
-    nlon = len(plon1d) - 2
-    nlat = len(plat1d) - 2
-    neta = len(peta1d) - 2
-
-    # Prep padded residuals
-    presiduals3d = np.empty( (nlon+2, nlat+2, neta+2), dtype='f8' )
-    presiduals3d_pert = np.empty( (nlon+2, nlat+2, neta+2), dtype='f8' )
-
-
-    # First, evaluate current residuals and spherical-pad the array
-    tmp1, tmp2, presiduals3d[:,:,1:-1] = pad_field_due_to_spherical_symmetry(
-        eval_nonlinear_balance_residuals( pstreamfunc3d, alpha_x3d, alpha_y3d, 
-            alpha_xx3d, alpha_xy3d, alpha_yy3d, coriolis_param3d, ygrad_coriolis_param3d, 
-            fscaled_laplacian_geopot3d, plon1d, plat1d, peta1d ),
-        plon1d[1:-1], plat1d[1:-1]
-    )
-    # --- residuals3d has dimensions (lon, lat, layer)
-
-    # Pad residuals
-    presiduals3d[:,:,0] = presiduals3d[:,:,1]
-    presiduals3d[:,:,-1] = presiduals3d[:,:,-2]
-
-    # Init array to hold cost function gradient
-    cost_grad3d = np.empty( (nlon, nlat, neta), dtype='f8' )
-
-    # Make copies of streamfunction
-    streamfunc3d = pstreamfunc3d[1:-1,1:-1,1:-1] * 1
-    streamfunc3d_pert = streamfunc3d *1
-    pstreamfunc3d_pert = np.empty( pstreamfunc3d.shape, dtype='f8')
-
-
-    # Perform "stencil" calculation of cost gradient
-    # -----------------------------------------------
-    # Due to the calculation stencil of the spatial derivatives, it is possible to evaluate
-    # the cost function gradient at multiple locations simultaneously.
-    for i in range(3):
-        for j in range(3):
-            for k in range(3):
-                
-                # Perturb streamfunction
-                streamfunc3d_pert[i::3, j::3, k::3] += 1000
-
-                # Pad the perturbed streamfunction
-                pstreamfunc3d_pert[:,:,:] = pad_streamfunc( streamfunc3d_pert, plon1d[1:-1], plat1d[1:-1] )
-
-                # Compute perturbed residuals and pad the perturbed residuals
-                tmp1, tmp2, presiduals3d_pert[:,:,1:-1] = pad_field_due_to_spherical_symmetry(
-                    eval_nonlinear_balance_residuals( pstreamfunc3d_pert, alpha_x3d, alpha_y3d, 
-                        alpha_xx3d, alpha_xy3d, alpha_yy3d, coriolis_param3d, ygrad_coriolis_param3d, 
-                        fscaled_laplacian_geopot3d, plon1d, plat1d, peta1d ),
-                    plon1d[1:-1], plat1d[1:-1] 
-                )
-                presiduals3d_pert[:,:,0] = presiduals3d_pert[:,:,1]
-                presiduals3d_pert[:,:,-1] = presiduals3d_pert[:,:,-2]
-
-                # Compute summand of the cost function gradient
-                summand = ( (presiduals3d_pert - presiduals3d)/1000 ) * presiduals3d*2
-                # print( np.abs(summand).max())
-
-                # Compute gradient at chosen locations by summing up the summands
-                cost_grad3d[i::3, j::3, k::3] = 0.
-                for i1 in np.arange(i, nlon)[::3]:
-                    for j1 in np.arange(j, nlat)[::3]:
-                        for k1 in np.arange(k, neta)[::3]:
-                            for di in range(-1,2):
-                                for dj in range(-1,2):
-                                    for dk in range(-1,2):
-                                        cost_grad3d[i1,j1,k1]+= (summand[1+i1+di,1+j1+dj,1+k1+dk])
-
-                # ------ End of cost function gradient calculation for selected locations
-
-                # Reset value
-                streamfunc3d_pert[i::3, j::3, k::3] = streamfunc3d[i::3, j::3, k::3]
-
-            # --- End of loop over layer index
-        # --- End of loop over latitude index
-    # --- End of loop over longitude index
-    
-    # Return gradient of cost function as a 1D array
-    return cost_grad3d.reshape( nlon*nlat*neta ) #*1e8
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''
-    FUNCTIONS TO EVALUATE NONLINEAR BALANCE COST FUNCTION AND ITS GRADIENT
+    FUNCTIONS TO DIAGNOSE GEOSTROPHIC FLOW
 '''
 
 
 
 
 '''
-    Function to compute the constants needed to evaluate nonlinear flow equation
+    Function to compute the constants needed to diagnose geostrophic flow on terrain-following coordinates
 
     All inputs must be in SI units!!
 
@@ -1884,7 +1621,7 @@ def fast_eval_cost_grad( pstreamfunc3d, alpha_x3d, alpha_y3d, alpha_xx3d, alpha_
     8) lat1d (lat)
             1D NumPy array of latitude values (in degrees).
 '''
-def compute_constants_needed_to_evaluate_nonlinear_flow_equation( pres3d, psurf2d, ptop2d, hgt3d, terrain2d, hgttop2d, lon1d, lat1d ):
+def compute_constants_needed_to_diagnose_geostrophic_flow( pres3d, psurf2d, ptop2d, hgt3d, terrain2d, hgttop2d, lon1d, lat1d ):
 
     # Useful constants
     DEG_2_RAD = PI/180
@@ -1941,50 +1678,21 @@ def compute_constants_needed_to_evaluate_nonlinear_flow_equation( pres3d, psurf2
     # Compute all alpha values
     alpha_x  =  compute_alpha_x( peta1d, ppres3d, plon1d, plat1d )
     alpha_y  =  compute_alpha_y( peta1d, ppres3d, plon1d, plat1d )
-    alpha_xx = compute_alpha_xx( peta1d, ppres3d, plon1d, plat1d )
-    alpha_yy = compute_alpha_yy( peta1d, ppres3d, plon1d, plat1d )
-    alpha_xy = compute_alpha_xy( peta1d, ppres3d, plon1d, plat1d )
-
-
-    # Compute laplacian of geopotential field
-    laplacian_geopot  = compute_d2f_dx2_on_pres_surface( pgeopot3d, alpha_x, alpha_y, alpha_xx, plon1d, plat1d, peta1d )
-    laplacian_geopot += compute_d2f_dy2_on_pres_surface( pgeopot3d, alpha_x, alpha_y, alpha_yy, plon1d, plat1d, peta1d )
 
     # Generate coriolis parameter at all locations
     platmesh, plonmesh = np.meshgrid( plat1d, plon1d )
     coriolis_param3d = np.empty( ppres3d.shape, dtype='f8' )
-    coriolis_param3d_xgrad = np.zeros( ppres3d.shape, dtype='f8' )
-    coriolis_param3d_ygrad = np.empty( ppres3d.shape, dtype='f8' )
-    for k in range( len(peta1d) ):
-        coriolis_param3d[:,:,k] =  2 * EARTH_ANGULAR_SPEED * np.sin( DEG_2_RAD * platmesh )
 
-    # Generate y-gradient of coriolis parameter
-    coriolis_param3d_ygrad = compute_df_dy_on_eta_surface( 
-            coriolis_param3d, plon1d, plat1d
-    )
     
-
     # Dictionary of padded constants
     padded_constants_dict = {}
     padded_constants_dict['coriolis']                   = coriolis_param3d * 1
-    padded_constants_dict['coriolis xgrad']             = coriolis_param3d_xgrad * 1
-    padded_constants_dict['coriolis ygrad']             = coriolis_param3d_ygrad * 1
-    padded_constants_dict['f-scaled laplacian geopot']  = laplacian_geopot*1 /coriolis_param3d * 1
     padded_constants_dict['alpha_x' ]                   = alpha_x * 1
     padded_constants_dict['alpha_y' ]                   = alpha_y * 1
-    padded_constants_dict['alpha_xx']                   = alpha_xx * 1
-    padded_constants_dict['alpha_yy']                   = alpha_yy * 1
-    padded_constants_dict['alpha_xy']                   = alpha_xy * 1
     padded_constants_dict['plat1d']                     = plat1d * 1
     padded_constants_dict['plon1d']                     = plon1d * 1
     padded_constants_dict['peta1d']                     = peta1d * 1
 
-    # # Monge-Ampere condition
-    # flag_violated = (
-    #     padded_constants_dict['f-scaled laplacian geopot'] + padded_constants_dict['coriolis'] / 2 <= 0
-    # )
-    # padded_constants_dict['corrected f-scaled laplacian geopot'] = padded_constants_dict['f-scaled laplacian geopot']*1
-    # padded_constants_dict['corrected f-scaled laplacian geopot'][flag_violated] = -0.49 * padded_constants_dict['coriolis'][flag_violated] 
 
     return padded_constants_dict
 
@@ -1995,402 +1703,6 @@ def compute_constants_needed_to_evaluate_nonlinear_flow_equation( pres3d, psurf2
 
 
 
-
-
-
-
-
-
-
-
-'''
-    Function to compute cost function for nonlinear balance
-
-    Note that this function interfaces with an accelerated function to compute the gradient.
-    
-    Inputs:
-    --------
-    1) streamfunc1d (lon * lat * layer)
-            1D NumPy array containing flattened version of streamfunction on global gaussian grid.
-    2) padded_constants_dict
-            Python dictionary containing padded arrays of constants
-
-    Returns the squared sum of all nonlinear balance residuals
-'''
-def cost_function_nonlinear_balance(streamfunc1d, padded_constants_dict ):
-
-    # Extract constants
-    lon1d  = padded_constants_dict['plon1d'][1:-1]
-    lat1d  = padded_constants_dict['plat1d'][1:-1]
-    peta1d = padded_constants_dict['peta1d']
-
-
-    # Dimensions of unpadded arrays
-    nlon = len(lon1d)
-    nlat = len(lat1d)
-    neta = len(peta1d) -2
-
-
-    # Generate padded 3D streamfunciton array
-    # ---------------------------------------
-    # Init array
-    pstreamfunc3d = np.empty( (nlon+2, nlat+2, neta+2), dtype='f8' )
-    pstreamfunc3d[1:-1,1:-1,1:-1] = streamfunc1d.reshape([nlon, nlat, neta])
-
-    # Topmost boundary values for streamfunction (no slip condition)
-    pstreamfunc3d[1:-1,1:-1,-1] = pstreamfunc3d[1:-1,1:-1,-2]
-
-    # Bottommost boundary values for streamfunction (no slip condition)
-    pstreamfunc3d[1:-1,1:-1,0] = pstreamfunc3d[1:-1,1:-1,1]
-
-    # Spherical symmetry padding
-    plon1d, plat1d, pstreamfunc3d[:,:,:] = pad_field_due_to_spherical_symmetry( pstreamfunc3d[1:-1,1:-1,:], lon1d, lat1d)
-    
-
-
-    # Evaluate residuals
-    residuals3d = eval_nonlinear_balance_residuals( 
-        pstreamfunc3d, 
-        padded_constants_dict['alpha_x'],  padded_constants_dict['alpha_y'], 
-        padded_constants_dict['alpha_xx'], padded_constants_dict['alpha_xy'], 
-        padded_constants_dict['alpha_yy'], padded_constants_dict['coriolis'], 
-        padded_constants_dict['coriolis ygrad'], 
-        padded_constants_dict['f-scaled laplacian geopot'], 
-        plon1d, plat1d, peta1d
-    )
-
-    # Return cost function
-    return np.sum( residuals3d**2 ) #/ (nlon*nlat*neta )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''
-    Function to evaluate the cost function gradient efficiently
-    
-    Inputs:
-    --------
-    1) streamfunc1d (lon * lat * layer)
-            1D NumPy array containing flattened version of streamfunction on global gaussian grid.
-    2) padded_constants_dict
-            Python dictionary containing padded arrays of constants
-
-    Returns the gradient of the cost function in the form of a 1D NumPy array (lon * lat * layer).
-'''
-def cost_gradient_nonlinear_balance(streamfunc1d, padded_constants_dict ):
-
-    # Extract constants
-    lon1d  = padded_constants_dict['plon1d'][1:-1]
-    lat1d  = padded_constants_dict['plat1d'][1:-1]
-    peta1d = padded_constants_dict['peta1d']
-
-    # Dimensions of unpadded arrays
-    nlon = len(lon1d)
-    nlat = len(lat1d)
-    neta = len(peta1d) -2
-
-    # Generate padded 3D streamfunction array
-    pstreamfunc3d = pad_streamfunc( 
-        streamfunc1d.reshape( [nlon, nlat, neta] ), lon1d, lat1d 
-    )
-    
-    # Padded longitude
-    padded_lon1d = np.empty( len(lon1d)+2, dtype='f8')
-    padded_lon1d[1:-1] = lon1d
-    dlon = lon1d[1] - lon1d[0]
-    padded_lon1d[ 0] = lon1d[ 0] - dlon
-    padded_lon1d[-1] = lon1d[-1] + dlon
-
-
-    # Padded latitude
-    padded_lat1d = np.empty( len(lat1d)+2, dtype='f8')
-    padded_lat1d[1:-1] = lat1d
-    dlat = lat1d[1] - lat1d[0]
-    padded_lat1d[ 0] = lat1d[ 0] - dlat
-    padded_lat1d[-1] = lat1d[-1] + dlat
-
-    # Compute cost function gradient
-    cost_grad1d = fast_eval_cost_grad( 
-        pstreamfunc3d, 
-        padded_constants_dict['alpha_x'],  padded_constants_dict['alpha_y'], 
-        padded_constants_dict['alpha_xx'], padded_constants_dict['alpha_xy'], 
-        padded_constants_dict['alpha_yy'], padded_constants_dict['coriolis'], 
-        padded_constants_dict['coriolis ygrad'], 
-        padded_constants_dict['f-scaled laplacian geopot'], 
-        padded_lon1d, padded_lat1d, peta1d
-    )
-
-    return cost_grad1d #/ (nlon*nlat*neta )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''
-    Function to compute U and V field from streamfunction
-
-    Inputs:
-    --------
-    1) streamfunc3d (lon, lat, layer)
-            3D NumPy array containing flattened version of streamfunction on global gaussian grid.
-    2) padded_constants_dict
-            Python dictionary containing padded arrays of constants
-
-    Returns two 3D NumPy arrays (lon, lat, layer): U wind (m/s) and V wind (m/s)
-'''
-def convert_streamfunc_to_u_and_v( streamfunc3d, padded_constants_dict ):
-
-    # Pad the streamfunction for easy computation of gradients
-    pstreamfunc3d = pad_streamfunc( 
-                        streamfunc3d, padded_constants_dict['plon1d'][1:-1], 
-                        padded_constants_dict['plat1d'][1:-1]
-    )
-
-    # Compute u wind (defined as negative y-gradient of streamfunction on pressure surface)
-    u3d = compute_df_dy_on_pres_surface(
-        pstreamfunc3d, padded_constants_dict['alpha_y'], padded_constants_dict['plon1d'][1:-1], 
-        padded_constants_dict['plat1d'][1:-1], 
-    )[1:-1, 1:-1, 1:-1]
-    u3d *= -1
-
-    # Compute v wind (defined as x-gradient of streamfunction on pressure surface)
-    v3d = compute_df_dx_on_pres_surface(
-        pstreamfunc3d,  padded_constants_dict['alpha_x'], padded_constants_dict['plon1d'][1:-1], 
-        padded_constants_dict['plat1d'][1:-1], 
-    )[1:-1, 1:-1, 1:-1]
-
-    return u3d, v3d
-
-
-
-
-
-
-
-
-'''
-    Function to sanity check cost function gradient calculation.
-'''
-def SANITY_CHECK_cost_function_gradient():
-
-    # Load python packages for plotting
-    import matplotlib.pyplot as plt
-
-    # Grid settings (must be even numbers)
-    nlat = 8
-    nlon = nlat * 2
-    nlvl = 4
-
-    # Generate grid
-    lat1d =  ( (np.arange( nlat )+0.5 - int(nlat/2)) * 180/nlat ).astype('f8')
-    lon1d =  ( (np.arange( nlon )+0.5 - int(nlon/2)) * 360/nlon ).astype('f8')
-    pres1d = ( ( (np.arange( nlvl +1 ) )[1:] * 980/(nlvl+1) )[::-1] + 20 ).astype('f8') * 100
-
-
-    # Generate 2D meshes for lat, lon and pressure
-    latmesh, lonmesh = np.meshgrid(lat1d, lon1d)
-    psurf2d = ( (latmesh / latmesh) * 1000. ).astype('f8') * 100
-    ptop2d = psurf2d * 0. + 20*100
-
-
-    # Generate zonally and vertically symmetric height fields
-    height3d = np.empty( [nlon, nlat, nlvl], dtype='f8')
-    amplitude = np.log( pres1d[0]/100000 ) * -12000/1.7 / 2
-    for kk in range(nlvl):
-        ref_height = np.log( pres1d[kk]/100000 ) * -12000/1.7
-        height3d[:,:,kk] = ref_height + amplitude * np.cos( 2*latmesh * PI/180 ) * np.cos( 2*lonmesh * PI/180 )
-    # --- End of loop over model layers
-
-    # Generate meshes for terrain and model top height
-    terrain2d = latmesh*0
-    hgttop2d = np.log( 2000./100000 ) * -12000/1.7 + amplitude * np.cos( 2*latmesh * PI/180 ) * np.cos( 2*lonmesh * PI/180 )
-    
-    # Construct 3d pressure field
-    pres3d = np.empty( (nlon, nlat, nlvl), dtype='f8')
-    for kk in range(nlvl):
-        pres3d[:,:,kk] = pres1d[kk]
-
-    # Generate dictionary of padded constants
-    padded_constants_dict = compute_constants_needed_to_evaluate_nonlinear_flow_equation( 
-        pres3d, psurf2d, ptop2d, height3d, terrain2d, hgttop2d, lon1d, lat1d 
-    )
-
-    # Compute gradient and make plot
-    streamfunc1d = np.zeros( (nlon*nlat*nlvl), dtype='f8') 
-    grad1d = cost_gradient_nonlinear_balance(streamfunc1d, padded_constants_dict)
-    grad3d = grad1d.reshape([nlon, nlat, nlvl])
-
-    # Compare laplacian of geopotential and gradient
-    lap_geopot = padded_constants_dict['f-scaled laplacian geopot'][1:-1,1:-1,2]
-    crange = np.linspace(-1e-5, 1e-5, 11)
-    plt.contourf( lon1d, lat1d, lap_geopot.T, crange, cmap='RdBu_r', extend='both' )
-    cbar = plt.colorbar()
-    cbar.ax.set_ylabel( r'$\dfrac{1}{f} \nabla^2 \phi$')
-    
-    plt.contour( lon1d, lat1d, grad3d[:,:,2].T,  [-1e-9,0,1e-9], colors='k', linestyles=[':','--','-'])
-
-    plt.savefig('check_cost_func_grad.png')
-    plt.close()
-
-    return
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''
-    SANITY CHECK: Diagnosing nonlinearly balanced flow from zonally-symmetric height fields
-'''
-def sanity_check_nonlinear_flow_estimation():
-
-    # Load python packages for plotting
-    # from matplotlib import use as mpl_use
-    # mpl_use('agg')
-    import matplotlib.pyplot as plt
-    from scipy.optimize import minimize
-
-    # Grid settings (must be even numbers)
-    nlat = 10
-    nlon = nlat * 2
-    nlvl = 2
-
-
-    # Generate grid
-    lat1d =  ( (np.arange( nlat )+0.5 - int(nlat/2)) * 180/nlat ).astype('f8')
-    lon1d =  ( (np.arange( nlon )+0.5 - int(nlon/2)) * 360/nlon ).astype('f8')
-    pres1d = ( ( (np.arange( nlvl +1 ) )[1:] * 980/(nlvl+1) )[::-1] + 20 ).astype('f8') * 100
-
-
-    # Generate 2D meshes for lat, lon and pressure
-    latmesh, lonmesh = np.meshgrid(lat1d, lon1d)
-    psurf2d = ( (latmesh / latmesh) * 1000. ).astype('f8') * 100
-    ptop2d = psurf2d * 0. + 20*100
-
-
-    # Generate zonally and vertically symmetric height fields
-    height3d = np.empty( [nlon, nlat, nlvl], dtype='f8')
-    amplitude = np.log( pres1d[0]/100000 ) * -12000/1.7 / 2
-    meridional_variation = amplitude * np.cos( latmesh * PI/180) #np.exp( -0.5 * (latmesh)**2/(10**2) ) 
-    zonal_variation = 0 #np.abs(np.sin( 0.5*latmesh * PI/180)) * np.cos(2* lonmesh * PI/180) * amplitude /2
-
-    for kk in range(nlvl):
-        ref_height = np.log( pres1d[kk]/100000 ) * -12000/1.7
-        height3d[:,:,kk] = ref_height + meridional_variation + zonal_variation
-    # --- End of loop over model layers
-
-    # Generate meshes for terrain and model top height
-    terrain2d = latmesh*0
-    hgttop2d = np.log( 2000./100000 ) * -12000/1.7 + meridional_variation + zonal_variation
-    
-    # Construct 3d pressure field
-    pres3d = np.empty( (nlon, nlat, nlvl), dtype='f8')
-    for kk in range(nlvl):
-        pres3d[:,:,kk] = pres1d[kk]
-
-
-    # Generate dictionary of padded constants
-    padded_constants_dict = compute_constants_needed_to_evaluate_nonlinear_flow_equation( 
-        pres3d, psurf2d, ptop2d, height3d, terrain2d, hgttop2d, lon1d, lat1d 
-    )
-
-    plt.contour( lon1d, lat1d, height3d[:,:,-1].T, [10500, 11000, 11500], colors='k', linestyles=[':','--','-'])
-    plt.contourf( lon1d, lat1d, padded_constants_dict['f-scaled laplacian geopot'][1:-1,1:-1,-2].T , 11, cmap='RdBu_r')
-    plt.colorbar()
-    plt.savefig('check_laplacian.png')
-    plt.close()
-
-    # Visualize geopotential
-    geopot3d = 9.81 * height3d
-    plt.contourf( lon1d, lat1d, geopot3d[:,:,1].T, 11, cmap = 'RdBu_r')
-    plt.colorbar()
-    plt.savefig('check_geopotential.png')
-    plt.close()
-
-    streamfunc3d = geopot3d / padded_constants_dict['coriolis'][1:-1,1:-1,1:-1]
-    streamfunc1d = streamfunc3d.reshape(nlon*nlat*nlvl)
-    #np.zeros( (nlon*nlat*nlvl), dtype='f8') #(height3d*1).reshape(nlon*nlat*nlvl)
-    print( 'cost func', cost_function_nonlinear_balance(streamfunc1d, padded_constants_dict) )
-    # grad = cost_gradient_nonlinear_balance(streamfunc1d, padded_constants_dict)
-    # print( 'cost grad', np.sqrt(np.mean( np.power( grad,2 ) ) ), np.abs(grad).max() )
-
-    # Visualize first guess streamfunction
-    plt.contourf( lon1d, lat1d, streamfunc3d[:,:,1].T, 11, cmap = 'RdBu_r')
-    plt.colorbar()
-    plt.savefig('check_streamfunc_firstguess.png')
-    plt.close()
-    # quit()
-
-
-    # Derive streamfunction by minimizing residuals of nonlinear balance equation
-    print('starting to solve streamfunction')
-    res = minimize( 
-        cost_function_nonlinear_balance, streamfunc1d,
-        args = (padded_constants_dict), # jac = cost_gradient_nonlinear_balance,
-        options = {'disp' : True} #{'maxiter' : 10, 'disp' : True}
-    )
-    print('managed to run streamfunction solver')
-
-    print(res.x.min(), res.x.max())
-    print( dir(res))
-
-    # Visualize solution
-    plt.contourf( lon1d, lat1d, res.x.reshape((nlon, nlat, nlvl))[:,:,1].T, 11, cmap = 'RdBu_r')
-    plt.colorbar()
-    plt.savefig('check_streamfunc_soln.png')
-    plt.close()
-
-    # u3d, v3d = convert_streamfunc_to_u_and_v(  )
-
-
-    return
 
 
 
@@ -2430,10 +1742,6 @@ if __name__ == '__main__':
     )
 
     SANITY_CHECK_pad_field_due_to_spherical_symmetry()
-
-    # SANITY_CHECK_cost_function_gradient()
-
-    sanity_check_nonlinear_flow_estimation()
 
 
     print('meow')
