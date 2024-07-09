@@ -738,242 +738,6 @@ def compute_df_dy_on_pres_surface( field3d, alpha_y, lon1d, lat1d, eta1d ):
 
 
 
-'''
-    Function to compute ( (d2 f)/(dx dy) )_P
-
-    Inputs:
-    -------
-    1) field3d  (lon, lat, level)
-            3D NumPy array to take partial derivative on.
-            This field must be defined on the eta levels!!!
-    2) alpha_x  (lon, lat, level)
-            3D NumPy array containing alpha_x values.
-    3) alpha_y  (lon, lat, level)
-            3D NumPy array containing alpha_y values.
-    4) alpha_xy  (lon, lat, level)
-            3D NumPy array containing alpha_xy values.
-    5) lon1d (lon)
-            1D NumPy array of longitude values (in degrees).
-    6) lat1d (lat)
-            1D NumPy array of latitude values (in degrees).
-    7) eta1d (level)
-            1D NumPy array of eta coordinate values.
-
-    Returns a 3D NumPy array (lon, lat, level) containing the partial derivative desired.
-
-    Important Notes:
-    ----------------
-    1) The derivative values at the following locations are set to NaN for safety reasons:
-        * Topmost and bottommost layers
-        * Eastmost and westmost boundaries
-        * Northmost and southmost boundaries
-
-    2) The approach of Kasahara 1974 is used to compute derivatives on isobars when the 
-       data is actually defined on terrain-following coordinates. The formula used here is
-            ( d2f / dxdy )_P =  ( d2f / dxdy )_N 
-                                - alpha_x (d/dy)_N (d/dN) 
-                                - alpha_y (d/dx)_N (d/dN)
-                                + alpha_x * alpha_y (d2/dN2)
-                                - alpha_xy (d/dN)
-
-'''
-#njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
-def compute_d2f_dxdy_on_pres_surface( field3d, alpha_x, alpha_y, alpha_xy, lon1d, lat1d, eta1d ):
-
-    # Compute the ( d2f / dxdy )_N term
-    output = compute_d2f_dxdy_on_eta_surface( 
-        field3d, lon1d, lat1d
-    )
-
-    # Compute df/dN since it shows up often
-    df_dN = compute_df_dN( field3d, eta1d )
-
-    # Compute the (- alpha_x (d/dy)_N (d/dN)) term
-    output -= alpha_x * compute_df_dy_on_eta_surface( df_dN, lon1d, lat1d )
-
-    # Compute the (- alpha_y (d/dx)_N (d/dN)) term
-    output -= alpha_y * compute_df_dx_on_eta_surface( df_dN, lon1d, lat1d )
-
-    # Compute the (+ alpha_x * alpha_y (d2/dN2)) term
-    output += (
-        alpha_x * alpha_y 
-        * compute_df2_dN2_on_eta_surface( field3d, eta1d )
-    )
-
-    # Compute the (- alpha_xy * (d/dN)) term
-    output -= (alpha_xy * df_dN)
-
-    # Guard-rails to prevent weird derivative values
-    output[ 0,:,:] = np.nan
-    output[-1,:,:] = np.nan    
-    output[:, 0,:] = np.nan
-    output[:,-1,:] = np.nan
-    output[:,:, 0] = np.nan
-    output[:,:,-1] = np.nan
-
-    return output
-
-
-
-
-
-
-
-
-'''
-    Function to compute ( (d2 f)/(dx2) )_P
-
-    Inputs:
-    -------
-    1) field3d  (lon, lat, level)
-            3D NumPy array to take partial derivative on.
-            This field must be defined on the eta levels!!!
-    2) alpha_x  (lon, lat, level)
-            3D NumPy array containing alpha_x values.
-    3) alpha_y  (lon, lat, level)
-            3D NumPy array containing alpha_y values.
-    4) alpha_xx  (lon, lat, level)
-            3D NumPy array containing alpha_xx values.
-    5) lon1d (lon)
-            1D NumPy array of longitude values (in degrees).
-    6) lat1d (lat)
-            1D NumPy array of latitude values (in degrees).
-    7) eta1d (level)
-            1D NumPy array of eta coordinate values.
-
-    Returns a 3D NumPy array (lon, lat, level) containing the partial derivative desired.
-
-    Important Notes:
-    ----------------
-    1) The derivative values at the following locations are set to NaN for safety reasons:
-        * Topmost and bottommost layers
-        * Eastmost and westmost boundaries
-        * Northmost and southmost boundaries
-
-    2) The approach of Kasahara 1974 is used to compute derivatives on isobars when the 
-       data is actually defined on terrain-following coordinates. The formula used here is
-            ( d2f / d2 )_P =  ( d2f / dx2 )_N 
-                                - alpha_x (d/dx)_N (d/dN) 
-                                - alpha_x (d/dx)_N (d/dN)
-                                + alpha_x * alpha_x (d2/dN2)
-                                - alpha_xx (d/dN)
-
-'''
-#njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
-def compute_d2f_dx2_on_pres_surface( field3d, alpha_x, alpha_y, alpha_xx, lon1d, lat1d, eta1d ):
-
-    # Compute the ( d2f / dx2 )_N term
-    output = compute_d2f_dx2_on_eta_surface( 
-        field3d, lon1d, lat1d
-    )
-
-    # Compute df/dN since it shows up often
-    df_dN = compute_df_dN( field3d, eta1d )
-
-    # Compute the (- alpha_x (d/dx)_N (d/dN)) term
-    output -= alpha_x * compute_df_dx_on_eta_surface( df_dN, lon1d, lat1d ) *2
-
-    # Compute the (+ alpha_x * alpha_x (d2/dN2)) term
-    output += (
-        alpha_x * alpha_x
-        * compute_df2_dN2_on_eta_surface( field3d, eta1d )
-    )
-
-    # Compute the (- alpha_xy * (d/dN)) term
-    output -= (alpha_xx * df_dN)
-
-    # Guard-rails to prevent weird derivative values
-    output[ 0,:,:] = np.nan
-    output[-1,:,:] = np.nan    
-    output[:, 0,:] = np.nan
-    output[:,-1,:] = np.nan
-    output[:,:, 0] = np.nan
-    output[:,:,-1] = np.nan
-
-    return output
-
-
-
-
-
-
-
-
-
-
-'''
-    Function to compute ( (d2 f)/(dy2) )_P
-
-    Inputs:
-    -------
-    1) field3d  (lon, lat, level)
-            3D NumPy array to take partial derivative on.
-            This field must be defined on the eta levels!!!
-    2) alpha_x  (lon, lat, level)
-            3D NumPy array containing alpha_x values.
-    3) alpha_y  (lon, lat, level)
-            3D NumPy array containing alpha_y values.
-    4) alpha_yy  (lon, lat, level)
-            3D NumPy array containing alpha_yy values.
-    5) lon1d (lon)
-            1D NumPy array of longitude values (in degrees).
-    6) lat1d (lat)
-            1D NumPy array of latitude values (in degrees).
-    7) eta1d (level)
-            1D NumPy array of eta coordinate values.
-
-    Returns a 3D NumPy array (lon, lat, level) containing the partial derivative desired.
-
-    Important Notes:
-    ----------------
-    1) The derivative values at the following locations are set to NaN for safety reasons:
-        * Topmost and bottommost layers
-        * Eastmost and westmost boundaries
-        * Northmost and southmost boundaries
-
-    2) The approach of Kasahara 1974 is used to compute derivatives on isobars when the 
-       data is actually defined on terrain-following coordinates. The formula used here is
-            ( d2f / dy2 )_P =  ( d2f / dy2 )_N 
-                                - alpha_y (d/dy)_N (d/dN) 
-                                - alpha_y (d/dy)_N (d/dN)
-                                + alpha_y * alpha_y (d2/dN2)
-                                - alpha_yy (d/dN)
-
-'''
-#njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
-def compute_d2f_dy2_on_pres_surface( field3d, alpha_x, alpha_y, alpha_yy, lon1d, lat1d, eta1d ):
-
-    # Compute the ( d2f / dy2 )_N term
-    output = compute_d2f_dy2_on_eta_surface( 
-        field3d, lon1d, lat1d
-    )
-
-    # Compute df/dN since it shows up often
-    df_dN = compute_df_dN( field3d, eta1d )
-
-    # Compute the (- alpha_y (d/dy)_N (d/dN)) term
-    output -= alpha_y * compute_df_dy_on_eta_surface( df_dN, lon1d, lat1d ) *2
-
-    # Compute the (+ alpha_y * alpha_y (d2/dN2)) term
-    output += (
-        alpha_y * alpha_y
-        * compute_df2_dN2_on_eta_surface( field3d, eta1d )
-    )
-
-    # Compute the (- alpha_xy * (d/dN)) term
-    output -= (alpha_yy * df_dN)
-
-    # Guard-rails to prevent weird derivative values
-    output[ 0,:,:] = np.nan
-    output[-1,:,:] = np.nan    
-    output[:, 0,:] = np.nan
-    output[:,-1,:] = np.nan
-    output[:,:, 0] = np.nan
-    output[:,:,-1] = np.nan
-
-    return output
-
-
 
 
 
@@ -1524,11 +1288,11 @@ def diagnose_geostrophic_flow( pres3d, psurf2d, ptop2d, hgt3d, terrain2d, hgttop
     # Compute geostrophic flow
     # ------------------------
     u3d = (
-        compute_df_dy_on_eta_surface( pgeopot3d, plon1d, plat1d )[1:-1,1:-1,1:-1]
+        compute_df_dy_on_pres_surface( pgeopot3d, alpha_y, plon1d, plat1d, peta1d )[1:-1,1:-1,1:-1]
         / coriolis_param3d[1:-1,1:-1,1:-1]
     ) * (-1.0)
     v3d = (
-        compute_df_dx_on_eta_surface( pgeopot3d, plon1d, plat1d )[1:-1,1:-1,1:-1]
+        compute_df_dx_on_pres_surface( pgeopot3d, alpha_x, plon1d, plat1d, peta1d )[1:-1,1:-1,1:-1]
         / coriolis_param3d[1:-1,1:-1,1:-1]
     ) 
 
@@ -1581,7 +1345,7 @@ def SANITY_CHECK_geostrophic_flow_diagnosis():
     height3d = np.empty( [nlon, nlat, nlvl], dtype='f8')
     amplitude = np.log( pres1d[0]/100000 ) * -12000/1.7 / 2
     meridional_variation = amplitude * np.exp( -0.5 * (latmesh)**2/(30**2) ) 
-    zonal_variation = np.abs(np.sin( 0.5*latmesh * PI/180)) * np.cos(2* lonmesh * PI/180) * amplitude /2
+    zonal_variation = np.abs(np.sin( 0.5*latmesh * PI/180)) * np.cos(4* lonmesh * PI/180) * amplitude /2
 
     for kk in range(nlvl):
         ref_height = np.log( pres1d[kk]/100000 ) * -12000/1.7
@@ -1609,9 +1373,13 @@ def SANITY_CHECK_geostrophic_flow_diagnosis():
     cnf = plt.contourf( lon1d, lat1d, geopot3d[:,:,10].T, 11, cmap = 'RdBu_r')
     cbar = plt.colorbar(cnf)
     cbar.ax.set_ylabel('Geopotential (J/kg)')
+    norm_u = u3d / np.sqrt( u3d**2 + v3d**2)
+    norm_v = v3d / np.sqrt( u3d**2 + v3d**2)
+    # plt.quiver( lonmesh[::], latmesh, norm_u[:,:,2], norm_v[:,:,2])
     plt.streamplot( lon1d, lat1d, 
-        (u3d[:,:,10] / (111000 * np.cos( latmesh*PI/180 ))).T, 
-        (v3d[:,:,10]/111000).T, color='k', density=1
+        (u3d[:,:,5]).T, # / (111000 * np.cos( latmesh*PI/180 ))).T, 
+        (v3d[:,:,5]).T, #/111000).T,
+         color='k', density=1
     )
     plt.savefig('check_geostrophic_flow.png')
     plt.close()
