@@ -252,7 +252,7 @@ def compute_df_dN( field3d, eta1d ):
     output[:,:,-1] =  (field3d[:,:,-1] - field3d[:,:,-2])/deta[-1]
 
     # Compute derivative in-between levels, then interpolate to interior levels
-    inbtwn_eta = ( eta1d[1:] + eta1d[:-1] )
+    inbtwn_eta = ( eta1d[1:] + eta1d[:-1] )/2
     df_dN = (field3d[:,:,1:] - field3d[:,:,:-1]) / deta[:]
     for i in range(field3d.shape[0]):
         for j in range( field3d.shape[1] ):
