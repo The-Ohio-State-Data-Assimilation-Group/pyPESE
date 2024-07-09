@@ -122,7 +122,7 @@ def compute_df_dx_on_eta_surface( field3d, lon1d, lat1d ):
     )
 
     # Compute derivatives on in-between points, then interpolate to interior points
-    inbtwn_lon = ( lon1d[1:] + lon1d[:-1] )
+    inbtwn_lon = ( lon1d[1:] + lon1d[:-1] )/2
     for j in range( field3d.shape[1] ):
         # Compute derivative at in-btwn locations
         inbtwn_derivative = (
@@ -188,7 +188,7 @@ def compute_df_dy_on_eta_surface( field3d, lon1d, lat1d ):
     )
 
     # Compute derivatives on in-between points, then interpolate to interior points
-    inbtwn_lat = ( lat1d[1:] + lat1d[:-1] )
+    inbtwn_lat = ( lat1d[1:] + lat1d[:-1] )/2
     for i in range(field3d.shape[0]):
         inbtwn_derivative = (
             (field3d[i,1:,:] - field3d[i,:-1,:]).T
