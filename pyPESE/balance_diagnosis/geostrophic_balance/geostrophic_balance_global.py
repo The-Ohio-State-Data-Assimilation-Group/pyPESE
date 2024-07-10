@@ -366,7 +366,7 @@ def compute_df_dP( field3d, pres3d ):
     for i in range( output.shape[0] ):
         for j in range( output.shape[1] ):
             output[i,j,1:-1] = np.interp(
-                pres3d[i,j,1:-1], 
+                pres3d[i,j,1:-1] * dPres_sign, 
                 inter_level_pres[i,j,:] * dPres_sign,
                 inter_level_derivatives[i,j,:]
             )
