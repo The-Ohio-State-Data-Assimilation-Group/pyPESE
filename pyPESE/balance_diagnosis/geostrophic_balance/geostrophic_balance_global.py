@@ -366,7 +366,7 @@ def compute_df_dP( field3d, pres3d ):
     for i in range( output.shape[0] ):
         for j in range( output.shape[1] ):
             output[i,j,1:-1] = np.interp(
-                pres3d[i,j,1:-1], 
+                pres3d[i,j,1:-1] * dPres_sign, 
                 inter_level_pres[i,j,:] * dPres_sign,
                 inter_level_derivatives[i,j,:]
             )
@@ -525,7 +525,7 @@ def compute_alpha_x( eta1d, pres3d, lon1d, lat1d ):
     # Generate 3D array of eta values
     eta3d = np.empty( pres3d.shape, dtype='f8' )
     for k, eta in enumerate( eta1d ):
-        eta3d[:,:,k] = eta1d[k]
+        eta3d[:,:,k] = eta
 
     # Compute dN/dP
     dN_dP = compute_df_dP( eta3d, pres3d )
