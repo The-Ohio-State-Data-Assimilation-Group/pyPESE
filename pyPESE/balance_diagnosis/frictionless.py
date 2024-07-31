@@ -56,9 +56,10 @@ jit_cache_flag = False
 
 '''
     FUNCTION TO COMPUTE SPATIAL GEOPOTENTIAL PERTURBATIONS THAT ARE CONSISTENT
-    WITH FRICTIONLESS HYDROSTATIC BALANCED 3D FLOW
+    WITH FRICTIONLESS BALANCED 3D FLOW
     
-    Note: Geopotential perturbations has a spatial mean of zero! Need to add a constant value to it.
+    Note: Geopotential perturbations has a spatial mean of zero! Need to add 
+    a constant value to it.
 
     Inputs:
     -------
@@ -68,9 +69,9 @@ jit_cache_flag = False
             3D NumPy array of meridional wind velocities on PRESSURE SURFACES.
     3) wwind3d (lon, lat, level)
             3D NumPy array of omega wind velocities on PRESSURE SURFACES.
-    3) lon1d (lon)
+    4) lon1d (lon)
             1D NumPy array of longitude values (in degrees).
-    4) lat1d (lat)
+    5) lat1d (lat)
             1D NumPy array of latitude values (in degrees). 
 '''
 def compute_geopotential_from_frictionless_3d_flow( uwind3d, vwind3d, wwind3d, lon1d, lat1d, plvls1d ):
@@ -93,7 +94,6 @@ def compute_geopotential_from_frictionless_3d_flow( uwind3d, vwind3d, wwind3d, l
     # Pad stuff...
     plon1d, plat1d, pu3d = pad_field_due_to_spherical_symmetry( uwind3d, lon1d, lat1d)
     plon1d, plat1d, pv3d = pad_field_due_to_spherical_symmetry( vwind3d, lon1d, lat1d)
-    plon1d, plat1d, pw3d = pad_field_due_to_spherical_symmetry( wwind3d, lon1d, lat1d)
 
     # Generate cube of pressures
     pres3d = np.empty( (nlon, nlat, nlvl), dtype='f8' )
@@ -102,7 +102,7 @@ def compute_geopotential_from_frictionless_3d_flow( uwind3d, vwind3d, wwind3d, l
 
 
     # Compute advection and coriolis terms for eastward momentum
-    eastward_terms = (
+    xterms = (
         # Advection terms
         uwind3d * compute_df_dx_on_eta_surface(pu3d, plon1d, plat1d)[1:-1,1:-1]
         + vwind3d * compute_df_dy_on_eta_surface(pu3d, plon1d, plat1d)[1:-1,1:-1]
@@ -111,8 +111,9 @@ def compute_geopotential_from_frictionless_3d_flow( uwind3d, vwind3d, wwind3d, l
         - coriolis_param3d * vwind3d
     )
 
+
     # Compute advection and coriolis terms for northward momentum
-    northward_terms = (
+    yterms = (
         # Advection terms
         uwind3d * compute_df_dx_on_eta_surface(pv3d, plon1d, plat1d)[1:-1,1:-1]
         + vwind3d * compute_df_dy_on_eta_surface(pv3d, plon1d, plat1d)[1:-1,1:-1]
@@ -121,41 +122,20 @@ def compute_geopotential_from_frictionless_3d_flow( uwind3d, vwind3d, wwind3d, l
         + coriolis_param3d * uwind3d
     )
 
-    # Compute divergence
-    plon1d, plat1d, peterms = pad_field_due_to_spherical_symmetry( eastward_terms, lon1d, lat1d)
+    # Compute convergence of forces
+    plon1d, plat1d, pxterms = pad_field_due_to_spherical_symmetry( xterms, lon1d, lat1d)
+    plon1d, plat1d, pyterms = pad_field_due_to_spherical_symmetry( yterms, lon1d, lat1d)
+    conv_terms = (
+        compute_df_dx_on_eta_surface( pxterms, plon1d, plat1d )[1:-1,1:-1,:]
+        + compute_df_dy_on_eta_surface( pyterms, plon1d, plat1d )[1:-1,1:-1,:]
+    ) * (-1)
     
-
-
-
-
-
-
-
-
-
-    # Estimate streamfunction
-    streamfunc3d = compute_streamfunc(uwind3d, vwind3d, lon1d, lat1d)
-
-
-    # Compute coriolis term in geostrophic poisson equation
-    coriolis_terms = (
-        compute_d2f_dx2_on_eta_surface( streamfunc3d, lon1d, lat1d )
-        + compute_d2f_dy2_on_eta_surface( streamfunc3d, lon1d, lat1d )
-    ) 
-    coriolis_terms += ( 
-        compute_df_dy_on_eta_surface( streamfunc3d, lon1d, lat1d) 
-        * (coriolis_beta3d / coriolis_param3d)
-    )
-    coriolis_terms *= coriolis_param3d
-
-
-    # Invert Poisson equation to obtain mean-zero geopotential field
-    zero_mean_geopot3d = spherical_invert_poisson_equation( coriolis_terms )
+    # Solve Poisson equation to obtain balanced geopotential's spatial perturbations
+    zero_mean_geopot3d = spherical_invert_poisson_equation( conv_terms )
     zero_mean_geopot3d -= np.mean( np.mean( zero_mean_geopot3d, axis=0), axis=1 )
 
-
-    # Return mean-zero geopotential heights
-    return zero_mean_geopot3d / GRAVITY_ACCEL
+    # Return mean-zero geopotential
+    return zero_mean_geopot3d 
 
 
 
@@ -170,7 +150,7 @@ def compute_geopotential_from_frictionless_3d_flow( uwind3d, vwind3d, wwind3d, l
 
 
 '''
-    FUNCTION TO COMPUTE BALANCED GEOPOTENTIAL HEIGHTS ON ETA LEVELS
+    FUNCTION TO COMPUTE BALANCED GEOPOTENTIAL ON ETA LEVELS
 
     Inputs:
     -------
