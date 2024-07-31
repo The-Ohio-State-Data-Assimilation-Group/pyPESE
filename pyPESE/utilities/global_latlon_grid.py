@@ -993,10 +993,6 @@ def SANITY_CHECK_pad_field_due_to_spherical_symmetry():
     -------
     1) vort3d (lon, lat, level)
         3D NumPy array of "right-hand-side" terms in Poisson equation
-    2) lon1d (lon)
-            1D NumPy array of longitude values (in degrees).
-    3) lat1d (lat)
-            1D NumPy array of latitude values (in degrees).
 
     Returns a 3D NumPy array (lon, lat, level) containing the inverted values
 '''
