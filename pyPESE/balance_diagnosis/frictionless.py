@@ -173,7 +173,7 @@ def compute_geopotential_from_frictionless_3d_flow( uwind3d, vwind3d, wwind3d, l
     9) lat1d (lat)
             1D NumPy array of latitude values (in degrees). 
 '''
-def compute_balanced_geopotential_from_frictionles_hydrostatic_flow_on_eta_lvls( uwind3d, vwind3d, pres3d, hgt3d, psurf2d, tsurf2d, terrain2d, lon1d, lat1d ):
+def compute_balanced_geopotential_from_frictionles_hydrostatic_flow_on_eta_lvls( uwind3d, vwind3d, wwind3d, pres3d, hgt3d, psurf2d, tsurf2d, terrain2d, lon1d, lat1d ):
 
     # Detect dimensions
     nlon, nlat, neta = uwind3d.shape
@@ -188,6 +188,7 @@ def compute_balanced_geopotential_from_frictionles_hydrostatic_flow_on_eta_lvls(
     # Interpolate U & V to desired pressure levels
     uwind_plvl = basic_interpolate_to_pressure_levs( pres3d, uwind3d, plvls1d)
     vwind_plvl = basic_interpolate_to_pressure_levs( pres3d, vwind3d, plvls1d)
+    wwind_plvl = basic_interpolate_to_pressure_levs( pres3d, wwind3d, plvls1d)
 
     # Interpolate geopotential to pressure levels
     geoopot_plvl = interp_geopotential_to_plvls( 
@@ -195,7 +196,7 @@ def compute_balanced_geopotential_from_frictionles_hydrostatic_flow_on_eta_lvls(
     )
 
     # Compute geopotnetial with mean zero
-    mean_zero_geopot = compute_geopotential_from_frictionless_3d_flow( uwind_plvl, vwind_plvl, lon1d, lat1d, plvls1d )
+    mean_zero_geopot = compute_geopotential_from_frictionless_3d_flow( uwind_plvl, vwind_plvl, wwind_plvl, lon1d, lat1d, plvls1d )
 
     # Adjust the layerwise mean of the geooptential
     geopot_plvl = mean_zero_geopot + np.mean( np.mean( geoopot_plvl, axis=0), axis=1)
