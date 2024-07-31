@@ -320,9 +320,9 @@ def SANITY_CHECK_geostrophic_flow_diagnosis():
     Inputs:
     -------
     1) uwind3d (lon, lat, level)
-        3D NumPy array of zonal wind velocities
+        3D NumPy array of zonal wind velocities on PRESSURE SURFACES.
     2) vwind3d (lon, lat, level)
-        3D NumPy array of meridional wind velocities
+        3D NumPy array of meridional wind velocities on PRESSURE SURFACES.
     3) lon1d (lon)
             1D NumPy array of longitude values (in degrees).
     4) lat1d (lat)
@@ -331,7 +331,7 @@ def SANITY_CHECK_geostrophic_flow_diagnosis():
     Returns a 3D NumPy array (lon, lat, level) containing those vorticity values
 '''
 #njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:,:], float64[:,:] ) )
-def compute_vorticity_on_pres_levels( uwind3d, vwind3d, lon1d, lat1d ):
+def compute_vorticity( uwind3d, vwind3d, lon1d, lat1d ):
 
     vort3d = ( 
         compute_df_dx_on_eta_surface( vwind3d, lon1d, lat1d )
@@ -344,15 +344,19 @@ def compute_vorticity_on_pres_levels( uwind3d, vwind3d, lon1d, lat1d ):
 
 
 
+
+
+
+
 '''
-    FUNCTION TO COMPUTE STREAMFUNCTION VIA SPHERICAL HARMONICS
+    FUNCTION TO COMPUTE STREAMFUNCTION VIA SPHERICAL HARMONICS ON PRESSURE SURFACES
 
     Inputs:
     -------
     1) uwind3d (lon, lat, level)
-        3D NumPy array of zonal wind velocities
+        3D NumPy array of zonal wind velocities on PRESSURE SURFACES.
     2) vwind3d (lon, lat, level)
-        3D NumPy array of meridional wind velocities
+        3D NumPy array of meridional wind velocities on PRESSURE SURFACES.
     3) lon1d (lon)
             1D NumPy array of longitude values (in degrees).
     4) lat1d (lat)
@@ -360,7 +364,7 @@ def compute_vorticity_on_pres_levels( uwind3d, vwind3d, lon1d, lat1d ):
 
     Returns a 3D NumPy array (lon, lat, level) containing streamfunction values
 '''
-def compute_streamfunc_on_pres_levels( uwind3d, vwind3d, lon1d, lat1d ):
+def compute_streamfunc( uwind3d, vwind3d, lon1d, lat1d ):
 
     # Handy constant
     EARTH_RADIUS = 6371*1000 # in meters
@@ -370,7 +374,7 @@ def compute_streamfunc_on_pres_levels( uwind3d, vwind3d, lon1d, lat1d ):
     ndeg = int(nlat/2)
 
     # First, compute vorticity on lat-lon grid
-    vort3d = compute_vorticity_on_pres_levels( uwind3d, vwind3d, lon1d, lat1d )
+    vort3d = compute_vorticity( uwind3d, vwind3d, lon1d, lat1d )
 
     # Invert Poisson's equation
     streamfunc = spherical_invert_poisson_equation(vort3d)
@@ -380,6 +384,128 @@ def compute_streamfunc_on_pres_levels( uwind3d, vwind3d, lon1d, lat1d ):
 
 
 
+
+
+
+
+
+'''
+    FUNCTION TO SANITY CHECK STREAMFUNCTION CALCULATION ON PRESSURE SURFACES
+
+    Inputs:
+    -------
+    1) uwind3d (lon, lat, level)
+        3D NumPy array of zonal wind velocities on PRESSURE SURFACES.
+    2) vwind3d (lon, lat, level)
+        3D NumPy array of meridional wind velocities on PRESSURE SURFACES.
+    3) lon1d (lon)
+            1D NumPy array of longitude values (in degrees).
+    4) lat1d (lat)
+            1D NumPy array of latitude values (in degrees).
+'''
+def SANITY_CHECK_compute_streamfunc( uwind3d, vwind3d, lon1d, lat1d ):
+
+    import matplotlib.pyplot as plt
+
+    # Test function used to compute streamfunction
+    streamfunc = compute_streamfunc( 
+        uwind3d, vwind3d, lon1d, lat1d
+    ) 
+
+    # Compute vorticity from wind fields
+    vort3d_real = compute_vorticity( uwind3d, vwind3d, lon1d, lat1d )
+
+    # Compute vorticity from streamfunction
+    vort3d_test = compute_d2f_dx2_on_eta_surface(
+        streamfunc, lon1d, lat1d
+    )
+    vort3d_test += compute_d2f_dy2_on_eta_surface(
+        streamfunc, lon1d, lat1d
+    )
+
+
+    # Make figure to compare the streamfunction's vorticity to the original values
+    fig, axs = plt.subplots(nrows=2, ncols=2, figsize=(8,8) )
+    axs[0,0].contourf( lon1d, lat1d, vort3d_test[:,:,0].T, np.linspace(-1e-4,1e-4,10), cmap='RdBu_r', extend='both')
+    axs[0,0].set_title('Streamfunction-produced vorticity')
+    axs[0,1].contourf( lon1d, lat1d, vort3d_real[:,:,0].T, np.linspace(-1e-4,1e-4,10), cmap='RdBu_r', extend='both')
+    axs[0,1].set_title('Original vorticity')
+
+    diff_vort = vort3d_test[:,:,0] - vort3d_real[:,:,0]
+    diff_vort[np.abs(diff_vort)<1e-7] = np.nan
+    axs[1,1].contourf( lon1d, lat1d, diff_vort.T, np.linspace(-1e-4,1e-4,10), cmap='RdBu_r', extend='both')
+    axs[1,1].set_title('Test minus Original')
+    plt.savefig('test_streamfunc_calc.png')
+
+
+    return
+
+
+
+
+
+
+
+
+'''
+    FUNCTION TO COMPUTE GEOSTROPHICALLY BALANCED ZERO-MEAN GEOPOTENTIAL HEIGHTS
+    
+    Note: This height has a spatial mean of zero! Need to add a constant value to it.
+
+    Inputs:
+    -------
+    1) uwind3d (lon, lat, level)
+        3D NumPy array of zonal wind velocities on PRESSURE SURFACES.
+    2) vwind3d (lon, lat, level)
+        3D NumPy array of meridional wind velocities on PRESSURE SURFACES.
+    3) lon1d (lon)
+            1D NumPy array of longitude values (in degrees).
+    4) lat1d (lat)
+            1D NumPy array of latitude values (in degrees). 
+'''
+def compute_geostrophic_heights_from_horizontal_flow( uwind3d, vwind3d, lon1d, lat1d ):
+
+    # Useful constants
+    DEG_2_RAD = PI/180
+    EARTH_ANGULAR_SPEED = 7.2921159e-5
+    DRY_AIR_GAS_CONSTANT = 287.04 # J/K/kg
+    GRAVITY_ACCEL = 9.80665 
+    EARTH_RADIUS = 6371*1000
+
+
+    # Obtain info about dimensions
+    nlon, nlat, nlvl = uwind3d.shape
+
+
+    # Generate coriolis parameter and gradient (i.e., beta)
+    latmesh, lonmesh = np.meshgrid( lat1d, lon1d)
+    coriolis_param3d = np.empty( uwind3d.shape, dtype='f8' )
+    for k in range( nlvl ):
+        coriolis_param3d[:,:,k] =  2 * EARTH_ANGULAR_SPEED * np.sin( DEG_2_RAD * latmesh )
+    coriolis_beta3d = compute_df_dy_on_pres_surface( coriolis_param3d, lon1d, lat1d )
+
+
+    # Estimate streamfunction
+    streamfunc3d = compute_streamfunc(uwind3d, vwind3d, lon1d, lat1d)
+
+
+    # Compute coriolis term in geostrophic poisson equation
+    coriolis_terms = (
+        compute_d2f_dx2_on_eta_surface( streamfunc3d, lon1d, lat1d )
+        + compute_d2f_dy2_on_eta_surface( streamfunc3d, lon1d, lat1d )
+    ) 
+    coriolis_terms += ( 
+        compute_df_dy_on_eta_surface( streamfunc3d, lon1d, lat1d) 
+        * (coriolis_beta3d / coriolis_param3d)
+    )
+    coriolis_terms *= coriolis_param3d
+
+
+    # Invert Poisson equation to obtain mean-zero geopotential height field
+    zero_mean_geopot3d = spherical_invert_poisson_equation( coriolis_terms )
+    zero_mean_geopot3d -= np.mean( np.mean( zero_mean_geopot3d, axis=0), axis=1 )
+
+    return zero_mean_geopot3d
 
 
 
