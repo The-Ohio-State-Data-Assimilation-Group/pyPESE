@@ -98,7 +98,7 @@ def compute_geopotential_from_frictionless_3d_flow( uwind3d, vwind3d, wwind3d, l
     # Generate cube of pressures
     pres3d = np.empty( (nlon, nlat, nlvl), dtype='f8' )
     for kk in range(nlvl):
-        pres3d[:,:,kk] = plvls1d
+        pres3d[:,:,kk] = plvls1d[kk]
 
 
     # Compute advection and coriolis terms for eastward momentum
@@ -106,7 +106,7 @@ def compute_geopotential_from_frictionless_3d_flow( uwind3d, vwind3d, wwind3d, l
         # Advection terms
         uwind3d * compute_df_dx_on_eta_surface(pu3d, plon1d, plat1d)[1:-1,1:-1]
         + vwind3d * compute_df_dy_on_eta_surface(pu3d, plon1d, plat1d)[1:-1,1:-1]
-        + wwind3d * compute_df_dP( pu3d, pres3d )
+        + wwind3d * compute_df_dP( uwind3d, pres3d )
         # Coriolis term
         - coriolis_param3d * vwind3d
     )
@@ -117,7 +117,7 @@ def compute_geopotential_from_frictionless_3d_flow( uwind3d, vwind3d, wwind3d, l
         # Advection terms
         uwind3d * compute_df_dx_on_eta_surface(pv3d, plon1d, plat1d)[1:-1,1:-1]
         + vwind3d * compute_df_dy_on_eta_surface(pv3d, plon1d, plat1d)[1:-1,1:-1]
-        + wwind3d * compute_df_dP( pv3d, pres3d )
+        + wwind3d * compute_df_dP( vwind3d, pres3d )
         # Coriolis term
         + coriolis_param3d * uwind3d
     )
@@ -208,56 +208,3 @@ def compute_balanced_geopotential_from_frictionles_hydrostatic_flow_on_eta_lvls(
     return geopot3d
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''
-    SANITY CHECKS
-'''
-if __name__ == '__main__':
-
-    print( 
-        '\nTime spent on eager compilation of functions: %d seconds\n' 
-        % (time()-t0)
-    )
-
-    SANITY_CHECK_pad_field_due_to_spherical_symmetry()
-
-    SANITY_CHECK_geostrophic_flow_diagnosis()
-
-
-    print('meow')
