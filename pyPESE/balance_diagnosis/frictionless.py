@@ -190,22 +190,21 @@ def compute_balanced_geopotential_from_frictionles_hydrostatic_flow_on_eta_lvls(
     vwind_plvl = basic_interpolate_to_pressure_levs( pres3d, vwind3d, plvls1d)
 
     # Interpolate geopotential to pressure levels
-    hgt_plvl = interp_geopotential_to_plvls( 
+    geoopot_plvl = interp_geopotential_to_plvls( 
         hgt3d*GRAVITY_ACCEL, pres3d, psurf2d, tsurf2d, terrain2d, plvls1d
     )
-    hgt_plvl /= GRAVITY_ACCEL
 
-    # Compute geostrophic heights with mean zero
-    mean_zero_hgt = compute_balanced_geopotential_from_frictionles_hydrostatic_flow( uwind_plvl, vwind_plvl, lon1d, lat1d )
+    # Compute geopotnetial with mean zero
+    mean_zero_geopot = compute_geopotential_from_frictionless_3d_flow( uwind_plvl, vwind_plvl, lon1d, lat1d, plvls1d )
 
-    # Adjust the layerwise mean of the geostrophic height
-    geostrophic_hgt_plvl = mean_zero_hgt + np.mean( np.mean( hgt_plvl, axis=0), axis=1)
+    # Adjust the layerwise mean of the geooptential
+    geopot_plvl = mean_zero_geopot + np.mean( np.mean( geoopot_plvl, axis=0), axis=1)
 
-    # Interpolate geostrophic heights from plvls back to eta lvls
-    geostrophic_hgt3d = basic_interpolate_to_eta_levs( plvls1d, geostrophic_hgt_plvl, pres3d )
+    # Interpolate geopotential from plvls back to eta lvls
+    geopot3d = basic_interpolate_to_eta_levs( plvls1d, geopot_plvl, pres3d )
 
 
-    return geostrophic_hgt3d
+    return geopot3d
 
 
 
