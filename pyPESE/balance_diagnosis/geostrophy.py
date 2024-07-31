@@ -43,7 +43,7 @@ from time import time
 from pyPESE.utilities.global_latlon_grid import *
 
 # Load functions relating to vertical interpolation
-from pyPESE.utilities.vertical_interp import interp_geopotential_to_plvls, basic_interpolate_to_pressure_levs
+from pyPESE.utilities.vertical_interp import interp_geopotential_to_plvls, basic_interpolate_to_pressure_levs, basic_interpolate_to_eta_levs
 
 
 t0 = time()
@@ -528,53 +528,54 @@ def compute_geostrophic_heights_from_horizontal_flow( uwind3d, vwind3d, lon1d, l
     Inputs:
     -------
     1) uwind3d (lon, lat, level)
-        3D NumPy array of zonal wind velocities on ETA LEVELS.
+            3D NumPy array of zonal wind velocities on ETA LEVELS.
     2) vwind3d (lon, lat, level)
-        3D NumPy array of meridional wind velocities on ETA LEVELS.
+            3D NumPy array of meridional wind velocities on ETA LEVELS.
     3) pres3d (lon, lat, level)
-        3D NumPy array of pressure values on ETA LEVELS in UNITS OF PASCALS
+            3D NumPy array of pressure values on ETA LEVELS in UNITS OF PASCALS
     4) hgt3d (lon, lat, level)
-        3D NumPy array of geopotential heights on ETA LEVELS.
-    5) lon1d (lon)
+            3D NumPy array of geopotential heights on ETA LEVELS.
+    5) psurf2d (lon, lat)
+            2D NumPy array of surface pressure in pascals
+    6) tsurf2d (lon, lat)
+            2D NumPy array of surface temperature in K
+    7) terrain2d (lon, lat)
+            2D NumPy array of terrain heights in meters
+    8) lon1d (lon)
             1D NumPy array of longitude values (in degrees).
-    6) lat1d (lat)
+    9) lat1d (lat)
             1D NumPy array of latitude values (in degrees). 
 '''
-def compute_geostrophic_heights_on_eta_lvls( uwind3d, vwind3d, pres3d, hgt3d, lon1d, lat1d ):
+def compute_geostrophic_heights_on_eta_lvls( uwind3d, vwind3d, pres3d, hgt3d, psurf2d, tsurf2d, terrain2d, lon1d, lat1d ):
 
     # Detect dimensions
     nlon, nlat, neta = uwind3d.shape
+    nplvl = 201
 
-    # Determine if any of the eta levels happen to be isobaric
-    pres_latlon_avg = np.mean( np.mean( pres3d, axis=0), axis=1)
-    pres_latlon_std = np.sqrt( np.mean( np.mean( (pres3d - pres_latlon_avg)**2, axis=0), axis=1 ) )
-    pres_latlon_norm_std = pres_latlon_std / pres_latlon_avg
-    flag_isobaric = pres_latlon_norm_std < 1e-6
+    # Useful constants
+    GRAVITY_ACCEL = 9.80665 
     
-    # Determine pressure levels to execute geostrophic height calculations on
-    if ( np.sum( flag_isobaric ) == neta ):
-        nplvl = neta
-        plvl1d = pres_latlon_avg
-        flag_all_isobaric = True
+    # Pressure layers to do calculations on 
+    plvls1d = np.linspace( pres3d.min(), 1.01e5, nplvl)[::-1]
 
-    else: 
-        # Opps, some levels are not isobaric
-        flag_all_isobaric = False
+    # Interpolate U & V to desired pressure levels
+    uwind_plvl = basic_interpolate_to_pressure_levs( pres3d, uwind3d, plvls1d)
+    vwind_plvl = basic_interpolate_to_pressure_levs( pres3d, vwind3d, plvls1d)
 
-        # Number of terrain-following sigma coordinates
-        nsig = neta - np.sum(flag_isobaric)
-        
-        # Total number of plvls to work with 
-        nplvl = nsig * 2 + np.sum(flag_isobaric)
+    # Interpolate geopotential to pressure levels
+    hgt_plvl = interp_geopotential_to_plvls( 
+        hgt3d*GRAVITY_ACCEL, pres3d, psurf2d, tsurf2d, terrain2d, plvls1d
+    )
+    hgt_plvl /= GRAVITY_ACCEL
 
-        # Generate plvls
-        plvl1d = np.empty( )
+    # Compute geostrophic heights with mean zero
+    mean_zero_hgt = compute_geostrophic_heights_from_horizontal_flow( uwind_plvl, vwind_plvl, lon1d, lat1d )
 
+    # Adjust the layerwise mean of the geostrophic height
+    geostrophic_hgt_plvl = mean_zero_hgt + np.mean( np.mean( hgt_plvl, axis=0), axis=1)
 
-    np.linspace( pres3d.min(),  )
-
-
-
+    # Interpolate geostrophic heights from plvls back to eta lvls
+    geostrophic_hgt3d = basic_interpolate_to_eta_levs( plvls1d, geostrophic_hgt_plvl, pres3d )
 
 
     return geostrophic_hgt3d
