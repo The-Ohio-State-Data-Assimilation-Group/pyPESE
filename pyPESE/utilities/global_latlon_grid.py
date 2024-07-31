@@ -40,7 +40,7 @@ from time import time
 t0 = time()
 
 # flag for caching
-jit_cache_flag = True
+jit_cache_flag = False
 
 
 
@@ -252,6 +252,131 @@ def compute_df_dN( field3d, eta1d ):
 
     # Return 3D array of y-direction derivatives
     return output
+
+
+
+
+
+
+
+'''
+    Function to compute (d2f/dx2)_N
+
+    Inputs:
+    -------
+    1) field3d (lon, lat, level)
+        3D NumPy array to take partial derivative on.
+    2) lon1d (lon)
+            1D NumPy array of longitude values (in degrees).
+    3) lat1d (lat)
+            1D NumPy array of latitude values (in degrees).
+
+    Returns a 3D NumPy array (lon, lat, level) containing those derivative values
+'''
+@njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+def compute_d2f_dx2_on_eta_surface( field3d, lon1d, lat1d ):
+
+    # Useful constants
+    DEG_2_RAD = PI/180
+    METERS_PER_LAT_DEG = 6371*1000.*2*PI/360.
+
+
+    # Initialize array to hold derivatives
+    output = np.empty( field3d.shape, dtype='f8')
+
+    # Compute distances per degree of longitude (~111,000 m/deg on equator, 0 m/deg at poles)
+    dist_per_deg_lon = METERS_PER_LAT_DEG * np.cos( lat1d * DEG_2_RAD )
+
+    # Pad the data to account for spehrical symmetry
+    plon1d, plat1d, pfield3d = pad_field_due_to_spherical_symmetry( 
+        field3d, lon1d, lat1d
+    )
+
+    # Longitude interval
+    dlon = plon1d[1:] - plon1d[:-1]
+
+    # Compute derivatives 
+    for j in range( field3d.shape[1] ):
+
+        # Compute derivatives 
+        output[:,j,:] = (
+            pfield3d[2:,1+j,:] + pfield3d[:-2,1+j,:] - 2*pfield3d[1:-1,1+j,:]
+        ) / np.power( dist_per_deg_lon[j] * dlon[0], 2 )
+
+    # --- End of loop over latitude dimension
+    
+
+    # Return 3D array of x-direction derivatives
+    return output
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+    Function to compute (d2f/dy2)_N
+
+    Inputs:
+    -------
+    1) field3d (lon, lat, level)
+        3D NumPy array to take partial derivative on.
+    2) lon1d (lon)
+            1D NumPy array of longitude values (in degrees).
+    3) lat1d (lat)
+            1D NumPy array of latitude values (in degrees).
+
+    Returns a 3D NumPy array (lon, lat, level) containing those derivative values
+'''
+@njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+def compute_d2f_dy2_on_eta_surface( field3d, lon1d, lat1d ):
+
+    # Useful constants
+    DEG_2_RAD = PI/180
+    METERS_PER_LAT_DEG = 6371*1000.*2*PI/360.
+
+    # Initialize array to hold derivatives
+    output = np.empty( field3d.shape, dtype='f8')
+
+    # Pad the data to account for spehrical symmetry
+    plon1d, plat1d, pfield3d = pad_field_due_to_spherical_symmetry( 
+        field3d, lon1d, lat1d
+    )
+
+    # Longitude interval
+    dlat = plat1d[1:] - plat1d[:-1]
+
+    # Compute derivative on output grid
+    output = ( 
+        pfield3d[1:-1,2:,:] + pfield3d[1:-1,:-2,:] - 2*pfield3d[1:-1,1:-1,:]
+    ) / np.power((METERS_PER_LAT_DEG * dlat[0]), 2)
+
+    # Return 3D array of y-direction derivatives
+    return output
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
