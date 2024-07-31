@@ -307,6 +307,115 @@ def SANITY_CHECK_geostrophic_flow_diagnosis():
 
 
 
+'''
+    FUNCTIONS TO DIAGNOSE GEOSTROPHIC HEIGHTS FROM NON-DIVERGENT FLOW ON PRESSURE
+    SURFACES
+'''
+
+
+
+'''
+    FUNCTION TO COMPUTE VORTICITY (NEEDED TO ESTIMATE STREAMFUNCTION)
+
+    Inputs:
+    -------
+    1) uwind3d (lon, lat, level)
+        3D NumPy array of zonal wind velocities
+    2) vwind3d (lon, lat, level)
+        3D NumPy array of meridional wind velocities
+    3) lon1d (lon)
+            1D NumPy array of longitude values (in degrees).
+    4) lat1d (lat)
+            1D NumPy array of latitude values (in degrees).
+
+    Returns a 3D NumPy array (lon, lat, level) containing those vorticity values
+'''
+#njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:,:], float64[:,:] ) )
+def compute_vorticity_on_pres_levels( uwind3d, vwind3d, lon1d, lat1d ):
+
+    vort3d = ( 
+        compute_df_dx_on_eta_surface( vwind3d, lon1d, lat1d )
+        - compute_df_dy_on_eta_surface( uwind3d, lon1d, lat1d )
+    )
+
+    return vort3d
+
+
+
+
+
+'''
+    FUNCTION TO COMPUTE STREAMFUNCTION VIA SPHERICAL HARMONICS
+
+    Inputs:
+    -------
+    1) uwind3d (lon, lat, level)
+        3D NumPy array of zonal wind velocities
+    2) vwind3d (lon, lat, level)
+        3D NumPy array of meridional wind velocities
+    3) lon1d (lon)
+            1D NumPy array of longitude values (in degrees).
+    4) lat1d (lat)
+            1D NumPy array of latitude values (in degrees).
+
+    Returns a 3D NumPy array (lon, lat, level) containing streamfunction values
+'''
+def compute_streamfunc_on_pres_levels( uwind3d, vwind3d, lon1d, lat1d ):
+
+    # Handy constant
+    EARTH_RADIUS = 6371*1000 # in meters
+
+    # Array dimensions
+    nlon, nlat, nlvl = uwind3d.shape
+    ndeg = int(nlat/2)
+
+    # First, compute vorticity on lat-lon grid
+    vort3d = compute_vorticity_on_pres_levels( uwind3d, vwind3d, lon1d, lat1d )
+
+    # Invert Poisson's equation
+    streamfunc = spherical_invert_poisson_equation(vort3d)
+
+    return streamfunc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
