@@ -132,7 +132,7 @@ def compute_geopotential_from_frictionless_3d_flow( uwind3d, vwind3d, wwind3d, l
     
     # Solve Poisson equation to obtain balanced geopotential's spatial perturbations
     zero_mean_geopot3d = spherical_invert_poisson_equation( conv_terms )
-    zero_mean_geopot3d -= np.mean( np.mean( zero_mean_geopot3d, axis=0), axis=1 )
+    zero_mean_geopot3d -= np.mean( np.mean( zero_mean_geopot3d, axis=0), axis=0 )
 
     # Return mean-zero geopotential
     return zero_mean_geopot3d 
@@ -199,12 +199,10 @@ def compute_balanced_geopotential_from_frictionles_hydrostatic_flow_on_eta_lvls(
     mean_zero_geopot = compute_geopotential_from_frictionless_3d_flow( uwind_plvl, vwind_plvl, wwind_plvl, lon1d, lat1d, plvls1d )
 
     # Adjust the layerwise mean of the geooptential
-    geopot_plvl = mean_zero_geopot + np.mean( np.mean( geoopot_plvl, axis=0), axis=1)
+    geopot_plvl = mean_zero_geopot + np.mean( np.mean( geoopot_plvl, axis=0), axis=0)
 
     # Interpolate geopotential from plvls back to eta lvls
     geopot3d = basic_interpolate_to_eta_levs( plvls1d, geopot_plvl, pres3d )
 
 
     return geopot3d
-
-
