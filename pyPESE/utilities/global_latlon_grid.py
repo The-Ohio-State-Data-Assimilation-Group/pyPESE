@@ -54,6 +54,220 @@ jit_cache_flag = False
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+    FUNCTION TO PAD ARRAY DEFINED ON SPHERICAL SHELL
+
+    Inputs:
+    --------
+    1) field3d  (lon, lat, level)
+            3D NumPy array to pad
+    2) lon1d (lon)
+            1D NumPy array of longitude values (in degrees).
+    3) lat1d (lat)
+            1D NumPy array of latitude values (in degrees).
+
+    Returns a 3D NumPy array with dimensions (lon+2, lat+2, level) 
+
+'''
+@njit( nbtuple( (float64[:], float64[:], float64[:,:,:]) )( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+def pad_field_due_to_spherical_symmetry( field3d, lon1d, lat1d ): 
+
+    # Init array to hold padded values
+    padded_field3d = np.empty(
+        ( field3d.shape[0]+2, field3d.shape[1]+2, field3d.shape[2] ),
+        dtype='f8'
+    )
+
+    # Populate interior points
+    padded_field3d[1:-1,1:-1,:] = field3d[:,:,:]
+
+    # Pad the westmost boundary
+    padded_field3d[0,1:-1,:] = field3d[-1,:,:]
+
+    # Pad the eastmost boundary
+    padded_field3d[-1,1:-1,:] = field3d[0,:,:]
+
+    # Determining longitudes beyond the north/south poles
+    corresponding_lon = lon1d + 180.
+    while ( np.sum(corresponding_lon > 180) > 0):
+        corresponding_lon[corresponding_lon > 180] -= 360
+
+    # Pad the northmost boundary
+    for k in range( field3d.shape[2] ):
+        padded_field3d[1:-1,-1,k] = np.interp(
+            corresponding_lon,
+            lon1d, field3d[:,-1,k]
+        )
+    # --- End of loop over model levels
+
+    # Pad the Southmost boundary
+    for k in range( field3d.shape[2] ):
+        padded_field3d[1:-1,0,k] = np.interp(
+            corresponding_lon,
+            lon1d, field3d[:,0,k]
+        )
+    # --- End of loop over model levels    
+
+
+    # Pad the southwest corner
+    padded_field3d[0,0,:] = field3d[-1,0,:]
+
+    # Pad the southeast corner
+    padded_field3d[-1,0,:] = field3d[0,0,:]
+
+    # Pad the northwest corner
+    padded_field3d[0,-1,:] = field3d[-1,-1,:]
+
+    # Pad the northeast corner
+    padded_field3d[-1,-1,:] = field3d[0,-1,:]
+
+    # Padded longitude
+    padded_lon1d = np.empty( len(lon1d)+2, dtype='f8')
+    padded_lon1d[1:-1] = lon1d
+    dlon = lon1d[1] - lon1d[0]
+    padded_lon1d[ 0] = lon1d[ 0] - dlon
+    padded_lon1d[-1] = lon1d[-1] + dlon
+
+
+    # Padded latitude
+    padded_lat1d = np.empty( len(lat1d)+2, dtype='f8')
+    padded_lat1d[1:-1] = lat1d
+    dlat = lat1d[1] - lat1d[0]
+    padded_lat1d[ 0] = lat1d[ 0] - dlat
+    padded_lat1d[-1] = lat1d[-1] + dlat
+
+    return padded_lon1d, padded_lat1d, padded_field3d
+
+
+
+
+
+
+
+'''
+    Function to sanity check the spherical symmetry padding function
+'''
+def SANITY_CHECK_pad_field_due_to_spherical_symmetry():
+
+    import matplotlib.pyplot as plt
+
+    # Grid settings (must be even numbers)
+    nlat = 10
+    nlon = nlat * 2
+    nlvl = 4
+
+
+    # Generate grid
+    lat1d =  ( (np.arange( nlat )+0.5 - int(nlat/2)) * 180/nlat ).astype('f8')
+    lon1d =  ( (np.arange( nlon )+0.5 - int(nlon/2)) * 360/nlon ).astype('f8')
+
+
+
+    # Generate 2D meshes for lat, lon and pressure
+    latmesh, lonmesh = np.meshgrid(lat1d, lon1d)
+    # Generate some plot to check if the spherical padding is working
+    arr2d = np.zeros( (nlon, nlat, nlvl), dtype='f8' )
+    arr2d[:,:,0] = np.cos( 2*latmesh * PI/180 ) * np.cos( 2*lonmesh * PI/180 )
+    arr2d[:,:,1] = np.cos( 2*latmesh * PI/180 ) * np.cos( 2*lonmesh * PI/180 )*2
+    plon1d, plat1d, parr2d = pad_field_due_to_spherical_symmetry( arr2d, lon1d, lat1d)
+    plt.contour( lon1d, lat1d, arr2d[:,:,1].T, [-1.2, 1.2], colors='k', linestyles=['--','-'] )
+    plt.contourf( plon1d, plat1d, parr2d[:,:,1].T, 11, cmap = 'RdBu_r' )
+    plt.colorbar()
+
+
+    plt.axvline( 180, color='white', linestyle='-', linewidth=5 )
+    plt.axvline(-180, color='white', linestyle='-', linewidth=5 )
+    plt.axhline( 90, color='white', linestyle='-', linewidth=5 )
+    plt.axhline(-90, color='white', linestyle='-', linewidth=5 )
+
+    plt.axvline( 180, color='k', linestyle='-' )
+    plt.axvline(-180, color='k', linestyle='-' )
+    plt.axhline( 90, color='k', linestyle='-' )
+    plt.axhline(-90, color='k', linestyle='-' )
+
+
+    plt.savefig('check_spherical_array_padding.png')
+    plt.close()
+
+    return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 '''
     FUNCTIONS TO TAKE HORIZONTAL DERIVATIVES ON ETA LEVELS
                                                 ----------
@@ -762,197 +976,6 @@ def SANITY_CHECK_spatial_derivatives():
     print("")
 
     return
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''
-    FUNCTION TO PAD ARRAY DEFINED ON SPHERICAL SHELL
-
-    Inputs:
-    --------
-    1) field3d  (lon, lat, level)
-            3D NumPy array to pad
-    2) lon1d (lon)
-            1D NumPy array of longitude values (in degrees).
-    3) lat1d (lat)
-            1D NumPy array of latitude values (in degrees).
-
-    Returns a 3D NumPy array with dimensions (lon+2, lat+2, level) 
-
-'''
-@njit( nbtuple( (float64[:], float64[:], float64[:,:,:]) )( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
-def pad_field_due_to_spherical_symmetry( field3d, lon1d, lat1d ): 
-
-    # Init array to hold padded values
-    padded_field3d = np.empty(
-        ( field3d.shape[0]+2, field3d.shape[1]+2, field3d.shape[2] ),
-        dtype='f8'
-    )
-
-    # Populate interior points
-    padded_field3d[1:-1,1:-1,:] = field3d[:,:,:]
-
-    # Pad the westmost boundary
-    padded_field3d[0,1:-1,:] = field3d[-1,:,:]
-
-    # Pad the eastmost boundary
-    padded_field3d[-1,1:-1,:] = field3d[0,:,:]
-
-    # Determining longitudes beyond the north/south poles
-    corresponding_lon = lon1d + 180.
-    while ( np.sum(corresponding_lon > 180) > 0):
-        corresponding_lon[corresponding_lon > 180] -= 360
-
-    # Pad the northmost boundary
-    for k in range( field3d.shape[2] ):
-        padded_field3d[1:-1,-1,k] = np.interp(
-            corresponding_lon,
-            lon1d, field3d[:,-1,k]
-        )
-    # --- End of loop over model levels
-
-    # Pad the Southmost boundary
-    for k in range( field3d.shape[2] ):
-        padded_field3d[1:-1,0,k] = np.interp(
-            corresponding_lon,
-            lon1d, field3d[:,0,k]
-        )
-    # --- End of loop over model levels    
-
-
-    # Pad the southwest corner
-    padded_field3d[0,0,:] = field3d[-1,0,:]
-
-    # Pad the southeast corner
-    padded_field3d[-1,0,:] = field3d[0,0,:]
-
-    # Pad the northwest corner
-    padded_field3d[0,-1,:] = field3d[-1,-1,:]
-
-    # Pad the northeast corner
-    padded_field3d[-1,-1,:] = field3d[0,-1,:]
-
-    # Padded longitude
-    padded_lon1d = np.empty( len(lon1d)+2, dtype='f8')
-    padded_lon1d[1:-1] = lon1d
-    dlon = lon1d[1] - lon1d[0]
-    padded_lon1d[ 0] = lon1d[ 0] - dlon
-    padded_lon1d[-1] = lon1d[-1] + dlon
-
-
-    # Padded latitude
-    padded_lat1d = np.empty( len(lat1d)+2, dtype='f8')
-    padded_lat1d[1:-1] = lat1d
-    dlat = lat1d[1] - lat1d[0]
-    padded_lat1d[ 0] = lat1d[ 0] - dlat
-    padded_lat1d[-1] = lat1d[-1] + dlat
-
-    return padded_lon1d, padded_lat1d, padded_field3d
-
-
-
-
-
-
-
-'''
-    Function to sanity check the spherical symmetry padding function
-'''
-def SANITY_CHECK_pad_field_due_to_spherical_symmetry():
-
-    import matplotlib.pyplot as plt
-
-    # Grid settings (must be even numbers)
-    nlat = 10
-    nlon = nlat * 2
-    nlvl = 4
-
-
-    # Generate grid
-    lat1d =  ( (np.arange( nlat )+0.5 - int(nlat/2)) * 180/nlat ).astype('f8')
-    lon1d =  ( (np.arange( nlon )+0.5 - int(nlon/2)) * 360/nlon ).astype('f8')
-
-
-
-    # Generate 2D meshes for lat, lon and pressure
-    latmesh, lonmesh = np.meshgrid(lat1d, lon1d)
-    # Generate some plot to check if the spherical padding is working
-    arr2d = np.zeros( (nlon, nlat, nlvl), dtype='f8' )
-    arr2d[:,:,0] = np.cos( 2*latmesh * PI/180 ) * np.cos( 2*lonmesh * PI/180 )
-    arr2d[:,:,1] = np.cos( 2*latmesh * PI/180 ) * np.cos( 2*lonmesh * PI/180 )*2
-    plon1d, plat1d, parr2d = pad_field_due_to_spherical_symmetry( arr2d, lon1d, lat1d)
-    plt.contour( lon1d, lat1d, arr2d[:,:,1].T, [-1.2, 1.2], colors='k', linestyles=['--','-'] )
-    plt.contourf( plon1d, plat1d, parr2d[:,:,1].T, 11, cmap = 'RdBu_r' )
-    plt.colorbar()
-
-
-    plt.axvline( 180, color='white', linestyle='-', linewidth=5 )
-    plt.axvline(-180, color='white', linestyle='-', linewidth=5 )
-    plt.axhline( 90, color='white', linestyle='-', linewidth=5 )
-    plt.axhline(-90, color='white', linestyle='-', linewidth=5 )
-
-    plt.axvline( 180, color='k', linestyle='-' )
-    plt.axvline(-180, color='k', linestyle='-' )
-    plt.axhline( 90, color='k', linestyle='-' )
-    plt.axhline(-90, color='k', linestyle='-' )
-
-
-    plt.savefig('check_spherical_array_padding.png')
-    plt.close()
-
-    return
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
