@@ -13,6 +13,8 @@
 
     3)  Padding the edges of a global data array due to spherical symmetry
 
+    4) Invert Poisson's equation on spherical coordinates via spherical harmonics
+
 
     Notes:
     ------
@@ -36,6 +38,8 @@ from numba.types import Tuple as nbtuple
 from math import pi as PI
 
 from time import time
+
+from pyshtools.expand import MakeGridDH, SHExpandDH
 
 t0 = time()
 
@@ -931,6 +935,108 @@ def SANITY_CHECK_pad_field_due_to_spherical_symmetry():
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+    Function to invert Poisson equation via spherical harmonics
+
+    Inputs:
+    -------
+    1) vort3d (lon, lat, level)
+        3D NumPy array of "right-hand-side" terms in Poisson equation
+    2) lon1d (lon)
+            1D NumPy array of longitude values (in degrees).
+    3) lat1d (lat)
+            1D NumPy array of latitude values (in degrees).
+
+    Returns a 3D NumPy array (lon, lat, level) containing the inverted values
+'''
+def spherical_invert_poisson_equation( vort3d ):
+
+    # Handy constant
+    EARTH_RADIUS = 6371*1000 # in meters
+
+    # Array dimensions
+    nlon, nlat, nlvl = vort3d.shape
+    ndeg = int(nlat/2)
+
+
+    # Special hanndling for situation where nlon = nlat*2
+    if ( nlon==nlat*2 ):
+        vort3d = vort3d[::2,:,:]
+
+
+    # Convert lat-lon grid vorticity to spherical harmonic spectral grid vorticity
+    vort3d_coeffs = np.empty( (2, int(nlat/2), int(nlat/2), nlvl ), dtype='f8' )
+    for ilvl in range( nlvl ):
+        vort3d_coeffs[:,:,:,ilvl] = SHExpandDH( vort3d[:,:,ilvl].T )
+    # --- End of loop over model levels
+
+    # Invert the laplacian operator for streamfunction (equation below)
+    #    laplacian( streamfunc ) = vorticity
+    streamfunc_coeffs = vort3d_coeffs * (EARTH_RADIUS**2) * -1
+    for ideg in range( 1, ndeg ):
+        streamfunc_coeffs[:,ideg,:,:] /= (ideg * (ideg+1) )
+    # End of loop over spherical harmonic degrees
+    
+    # Convert streamfunction from spectral grid to lat-lon grid
+    streamfunc = np.empty( (nlon, nlat, nlvl), dtype='f8')
+    for ilvl in range( nlvl ):
+        if ( nlon==nlat*2 ):
+            streamfunc[:,:,ilvl] = MakeGridDH( streamfunc_coeffs[:,:,:,ilvl], sampling=2 ).T
+        else:
+            streamfunc[:,:,ilvl] = MakeGridDH( streamfunc_coeffs[:,:,:,ilvl] ).T
+
+    return streamfunc
 
 
 
