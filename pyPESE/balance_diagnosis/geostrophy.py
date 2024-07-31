@@ -447,6 +447,9 @@ def SANITY_CHECK_compute_streamfunc( uwind3d, vwind3d, lon1d, lat1d ):
 
 
 
+
+
+
 '''
     FUNCTION TO COMPUTE GEOSTROPHICALLY BALANCED ZERO-MEAN GEOPOTENTIAL HEIGHTS
     
@@ -468,9 +471,7 @@ def compute_geostrophic_heights_from_horizontal_flow( uwind3d, vwind3d, lon1d, l
     # Useful constants
     DEG_2_RAD = PI/180
     EARTH_ANGULAR_SPEED = 7.2921159e-5
-    DRY_AIR_GAS_CONSTANT = 287.04 # J/K/kg
     GRAVITY_ACCEL = 9.80665 
-    EARTH_RADIUS = 6371*1000
 
 
     # Obtain info about dimensions
@@ -501,11 +502,13 @@ def compute_geostrophic_heights_from_horizontal_flow( uwind3d, vwind3d, lon1d, l
     coriolis_terms *= coriolis_param3d
 
 
-    # Invert Poisson equation to obtain mean-zero geopotential height field
+    # Invert Poisson equation to obtain mean-zero geopotential field
     zero_mean_geopot3d = spherical_invert_poisson_equation( coriolis_terms )
     zero_mean_geopot3d -= np.mean( np.mean( zero_mean_geopot3d, axis=0), axis=1 )
 
-    return zero_mean_geopot3d
+
+    # Return mean-zero geopotential heights
+    return zero_mean_geopot3d / GRAVITY_ACCEL
 
 
 
@@ -513,6 +516,68 @@ def compute_geostrophic_heights_from_horizontal_flow( uwind3d, vwind3d, lon1d, l
 
 
 
+
+
+
+
+
+
+'''
+    FUNCTION TO COMPUTE GEOSTROPHICALLY BALANCED GEOPOTENTIAL HEIGHTS ON ETA LEVELS
+
+    Inputs:
+    -------
+    1) uwind3d (lon, lat, level)
+        3D NumPy array of zonal wind velocities on ETA LEVELS.
+    2) vwind3d (lon, lat, level)
+        3D NumPy array of meridional wind velocities on ETA LEVELS.
+    3) pres3d (lon, lat, level)
+        3D NumPy array of pressure values on ETA LEVELS in UNITS OF PASCALS
+    4) hgt3d (lon, lat, level)
+        3D NumPy array of geopotential heights on ETA LEVELS.
+    5) lon1d (lon)
+            1D NumPy array of longitude values (in degrees).
+    6) lat1d (lat)
+            1D NumPy array of latitude values (in degrees). 
+'''
+def compute_geostrophic_heights_on_eta_lvls( uwind3d, vwind3d, pres3d, hgt3d, lon1d, lat1d ):
+
+    # Detect dimensions
+    nlon, nlat, neta = uwind3d.shape
+
+    # Determine if any of the eta levels happen to be isobaric
+    pres_latlon_avg = np.mean( np.mean( pres3d, axis=0), axis=1)
+    pres_latlon_std = np.sqrt( np.mean( np.mean( (pres3d - pres_latlon_avg)**2, axis=0), axis=1 ) )
+    pres_latlon_norm_std = pres_latlon_std / pres_latlon_avg
+    flag_isobaric = pres_latlon_norm_std < 1e-6
+    
+    # Determine pressure levels to execute geostrophic height calculations on
+    if ( np.sum( flag_isobaric ) == neta ):
+        nplvl = neta
+        plvl1d = pres_latlon_avg
+        flag_all_isobaric = True
+
+    else: 
+        # Opps, some levels are not isobaric
+        flag_all_isobaric = False
+
+        # Number of terrain-following sigma coordinates
+        nsig = neta - np.sum(flag_isobaric)
+        
+        # Total number of plvls to work with 
+        nplvl = nsig * 2 + np.sum(flag_isobaric)
+
+        # Generate plvls
+        plvl1d = np.empty( )
+
+
+    np.linspace( pres3d.min(),  )
+
+
+
+
+
+    return geostrophic_hgt3d
 
 
 
