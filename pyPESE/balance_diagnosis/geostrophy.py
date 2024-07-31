@@ -482,7 +482,7 @@ def compute_geostrophic_heights_from_horizontal_flow( uwind3d, vwind3d, lon1d, l
     coriolis_param3d = np.empty( uwind3d.shape, dtype='f8' )
     for k in range( nlvl ):
         coriolis_param3d[:,:,k] =  2 * EARTH_ANGULAR_SPEED * np.sin( DEG_2_RAD * latmesh )
-    coriolis_beta3d = compute_df_dy_on_pres_surface( coriolis_param3d, lon1d, lat1d )
+    coriolis_beta3d = compute_df_dy_on_eta_surface( coriolis_param3d, lon1d, lat1d )
 
 
     # Estimate streamfunction
