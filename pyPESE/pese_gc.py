@@ -221,7 +221,7 @@ def pese_gc( fcst_ens_2d, list_of_dist_classes, list_extra_args, num_virt_ens, r
     # --- End of loop over variables
 
     
-    return virt_ens_2d
+    return virt_ens_2d, gauss_resamp_matrix
 
 
 
