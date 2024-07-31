@@ -73,7 +73,7 @@ jit_cache_flag = False
     4) lat1d (lat)
             1D NumPy array of latitude values (in degrees). 
 '''
-def compute_geostrophic_heights_from_3d_flow( uwind3d, vwind3d, wwind3d, lon1d, lat1d, plvls1d ):
+def compute_geopotential_from_frictionless_3d_flow( uwind3d, vwind3d, wwind3d, lon1d, lat1d, plvls1d ):
 
     # Useful constants
     DEG_2_RAD = PI/180
@@ -124,6 +124,11 @@ def compute_geostrophic_heights_from_3d_flow( uwind3d, vwind3d, wwind3d, lon1d, 
     # Compute divergence
     plon1d, plat1d, peterms = pad_field_due_to_spherical_symmetry( eastward_terms, lon1d, lat1d)
     
+
+
+
+
+
 
 
 
