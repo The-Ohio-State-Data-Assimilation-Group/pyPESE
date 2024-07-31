@@ -26,8 +26,24 @@ flag_jit_cache = False
 
 
 
+
+
 '''
-    Function for fast interpolation onto pressure levels
+
+'''
+
+
+
+
+
+
+
+
+
+
+
+'''
+    BASIC INTERPOLATION ONTO PRESSURE LEVELS
 '''
 @njit(  nb_f64[:,:,:]( nb_f64[:,:,:], nb_f64[:,:,:], nb_f64[:] ), cache=flag_jit_cache)
 def basic_interpolate_to_pressure_levs( pres3d, data_arr3d, plvls1d):
@@ -53,3 +69,71 @@ def basic_interpolate_to_pressure_levs( pres3d, data_arr3d, plvls1d):
 
 
 
+
+
+'''
+    Function to interpolate geopotential to specified pressure levels
+
+    Uses linear interpolation for above-ground situations.
+    Uses Trenberth et al (1993) Eq 15 for sub-surface interpolation
+'''
+@njit(
+    nb_f64[:,:,:](
+        nb_f64[:,:,:], nb_f64[:,:,:], nb_f64[:,:], nb_f64[:,:], nb_f64[:,:], nb_f64[:]
+    ), cache=flag_jit_cache
+)
+def interp_geopotential_to_plvls( geopot3d, pres3d, psurf2d, tsurf2d, terrain2d, plvls1d ):
+
+    # Extract dimensions
+    nx, ny, nz = geopot3d.shape
+    npres = len(plvls1d)
+
+    # Useful constants
+    GRAVITY_ACCEL = 9.80665 
+    DRY_AIR_GAS_CONSTANT = 287.04 # J/K/kg
+    
+    # 0.286 * GRAVITY_ACCEL /DRY_AIR_GAS_CONSTANT #
+
+    # Init array to hold interpolated geopotential fields
+    out_geopot3d = np.empty( (nx, ny, npres), dtype='f8')
+    
+    # Log-pressure coordinates
+    log_plvls1d = np.log( plvls1d ) * -1
+    log_pres3d = np.log( pres3d )   * -1
+
+
+    # loop over all locations
+    for ix in range( nx ):
+        for iy in range( ny ):
+
+            # Special temperatures defined in Trenbeth Eq (13)
+            T_o = tsurf2d[ix,iy] + 0.0065 * terrain2d[ix,iy]
+            T_pl = min( T_o, 298 )
+
+            # Determining lapse rate to use
+            dry_lapse_rate = 0.0065 * DRY_AIR_GAS_CONSTANT / GRAVITY_ACCEL
+        
+            # Determine which levels are above ground, which levels are below ground
+            flag_abv_ground = ( plvls1d  < psurf2d[ix,iy] )
+            flag_blw_ground = ( plvls1d >= psurf2d[ix,iy] )
+
+            # Interpolation for above-ground levels
+            tmp = np.interp( 
+                log_plvls1d[flag_abv_ground], log_pres3d[ix,iy,:], geopot3d[ix,iy,:]
+            )
+            out_geopot3d[ix,iy,flag_abv_ground] = tmp
+
+            # Extrapolation for below-ground levels
+            sub_plvls1d = plvls1d[flag_blw_ground]
+
+            factor = dry_lapse_rate*np.log( sub_plvls1d/psurf2d[ix,iy] )
+            out_geopot3d[ix,iy,flag_blw_ground] = (
+                terrain2d[ix,iy] * GRAVITY_ACCEL
+                -
+                DRY_AIR_GAS_CONSTANT * tsurf2d[ix,iy] * np.log( sub_plvls1d/psurf2d[ix,iy] )
+                    * ( 1 + 0.5*factor + (factor**2)/6. )
+            )
+        # --- End of loop over latitude-dimension
+    # --- End of loop over longitude dimension
+
+    return out_geopot3d
