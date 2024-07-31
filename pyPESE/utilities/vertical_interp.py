@@ -137,3 +137,40 @@ def interp_geopotential_to_plvls( geopot3d, pres3d, psurf2d, tsurf2d, terrain2d,
     # --- End of loop over longitude dimension
 
     return out_geopot3d
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+    BASIC INTERPOLATION FROM PRESSURE LEVELS TO ETA LEVELS
+'''
+@njit(  nb_f64[:,:,:]( nb_f64[:,:,:], nb_f64[:,:,:], nb_f64[:] ), cache=flag_jit_cache)
+def basic_interpolate_to_eta_levs( plvls1d, data_plvls, pres3d):
+
+    # Ascertain dimensions
+    nx, ny, nz0 = pres3d.shape
+
+    # Init output array
+    out_arr3d = np.zeros( (nx, ny, nz0), dtype='f8' )
+
+    # Loop over horizontal dimensions (assumed to be the first 2 dimensions)
+    for ix in range(nx):
+        for iy in range(ny):
+            out_arr3d[ix,iy,:] = np.interp( 
+                np.log(pres3d[ix,iy,:])*-1, 
+                np.log(plvls1d)*-1, data_plvls[ix,iy,:] 
+            )
+            # Minus sign added to ensure raw data monotonicity.
+
+    return out_arr3d
