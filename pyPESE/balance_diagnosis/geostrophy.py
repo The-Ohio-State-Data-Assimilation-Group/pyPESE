@@ -1,13 +1,20 @@
 #!/bin/python3
 '''
-    PYTHON FUNCTIONS TO DIAGNOSE GEOSTROPHIC FLOW FROM THERMODYNAMIC FIELDS
+    PYTHON FUNCTIONS TO DIAGNOSE GEOSTROPHICALLY-BALANCED FLOW OR GEOPOTENTIAL
     Written by: Man-Yau (Joseph) Chan
 
     DESCRIPTION:
     ------------
-    Geostrophic flow can be diagnosed from the horizontal derivatives of geopotential on pressure surfaces. This library of functions execute that diagnostic.
+    Much of the atmospheric/oceanic flow is in geostrophic balance. The functions
+    diagnoses either (1) geostrophic flow from given thermodynamic data or (2) 
+    geostrophic geopotential from given horizontal velocity data.
+
     
-    Note that the geostrophic equation is written in (x,y,P) coordinates. However, many weather models use terrain-following vertical coordinates instead of isobaric vertical coordinates. The approach of Kasahara (1974) is used to estimate geostrophic flow on terrain-following coordinates.
+    
+    Note that the geostrophic equation is written in (x,y,P) coordinates. However, 
+    many weather models use terrain-following vertical coordinates instead of isobaric
+    vertical coordinates. The approach of Kasahara (1974) is used to estimate geostrophic
+    flow on terrain-following coordinates.
     
     This diagnostic process assumes global Gaussian grids.
 
@@ -30,14 +37,46 @@ from numba import njit
 from numba import float64
 from numba.types import Tuple as nbtuple
 from math import pi as PI
-
 from time import time
+
+# Load all functions relating to taking spatial derivatives & spherical padding
+from pyPESE.utilities.global_latlon_grid import *
+
+# Load functions relating to vertical interpolation
+from pyPESE.utilities.vertical_interp import interp_geopotential_to_plvls, basic_interpolate_to_pressure_levs
 
 
 t0 = time()
 
 # flag for caching
 jit_cache_flag = False
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -238,6 +277,23 @@ def SANITY_CHECK_geostrophic_flow_diagnosis():
 
 
     return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
