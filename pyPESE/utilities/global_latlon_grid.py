@@ -3,15 +3,24 @@
     UTILITY FUNCTIONS TO DEAL WITH DATA ON A GLOBAL LATITUDE-LONGITUDE GRID
 
     Functions available:
+    -------------------
+    1)  Taking horizontal derivatives of data in its native vertical coordinate
+        (e.g., on a terrain-following sigma surface)
 
-    1) Taking horizontal derivatives of data in its native vertical coordinate
-       (e.g., on a terrain-following sigma surface)
+    2)  Taking horizontal derivatives of data on pressure surfaces, even though
+        the data is not in pressure coordinates (e.g., data's native vertical
+        coordinate is the terrain-following sigma coordiante)
 
-    2) Taking horizontal derivatives of data on pressure surfaces, even though
-       the data is not in pressure coordinates (e.g., data's native vertical
-       coordinate is the terrain-following sigma coordiante)
+    3)  Padding the edges of a global data array due to spherical symmetry
 
-    3) Padding the edges of a global data array due to spherical symmetry
+
+    Notes:
+    ------
+    1)  Many weather models use terrain-following vertical coordinates instead of pressure 
+        vertical coordinates. The approach of Kasahara (1974) is used to estimate horizontal 
+        derivatives on pressure surface.
+        The terrain-following vertical coordinate is called "N" (for "eta").
+
 '''
 
 
@@ -31,7 +40,7 @@ from time import time
 t0 = time()
 
 # flag for caching
-jit_cache_flag = False
+jit_cache_flag = True
 
 
 
@@ -44,6 +53,15 @@ jit_cache_flag = False
 '''
     FUNCTIONS TO TAKE HORIZONTAL DERIVATIVES ON ETA LEVELS
                                                 ----------
+
+
+    NOTES:
+    -------
+    1)  All derivative values on the corresponding boundaries of the NumPy arrays are likely crappy due to 
+        the use of finite element schemes. 
+            * d/dx values on the eastmost and westmost boundaries are crappy.
+            * d/dy values on the northmost and southmost boundaries are crappy.
+            * d2/dxdy values on the northmost, southmost, eastmost, westmost boundaries are crappy.
 '''
 
 
