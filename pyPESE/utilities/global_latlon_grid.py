@@ -39,7 +39,7 @@ from math import pi as PI
 
 from time import time
 
-from pyshtools.expand import MakeGridDH, SHExpandDH
+# from pyshtools.expand import MakeGridDH, SHExpandDH
 
 t0 = time()
 
@@ -433,7 +433,7 @@ def compute_df_dy_on_eta_surface( field3d, lon1d, lat1d ):
 
     Returns a 3D NumPy array (lon, lat, level) containing those derivative values
 '''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:] ), cache=jit_cache_flag )
+#njit( float64[:,:,:]( float64[:,:,:], float64[:] ), cache=jit_cache_flag )
 def compute_df_dN( field3d, eta1d ):
 
     # Eta intervals
@@ -491,7 +491,7 @@ def compute_df_dN( field3d, eta1d ):
 
     Returns a 3D NumPy array (lon, lat, level) containing those derivative values
 '''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+#njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_d2f_dx2_on_eta_surface( field3d, lon1d, lat1d ):
 
     # Useful constants
@@ -556,7 +556,7 @@ def compute_d2f_dx2_on_eta_surface( field3d, lon1d, lat1d ):
 
     Returns a 3D NumPy array (lon, lat, level) containing those derivative values
 '''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+#njit( float64[:,:,:]( float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
 def compute_d2f_dy2_on_eta_surface( field3d, lon1d, lat1d ):
 
     # Useful constants
@@ -693,37 +693,37 @@ def compute_df_dP( field3d, pres3d ):
 
 
 
-'''
-    Function to compute ( df/dx )_P
+# '''
+#     Function to compute ( df/dx )_P
 
-    Inputs:
-    -------
-    1) field3d  (lon, lat, level)
-            3D NumPy array to take partial derivative on.
-            This field must be defined on the eta levels!!!
-    2) alpha_x  (lon, lat, level)
-            3D NumPy array containing alpha_x values.
-    3) lon1d (lon)
-            1D NumPy array of longitude values (in degrees).
-    4) lat1d (lat)
-            1D NumPy array of latitude values (in degrees).
-    5) eta1d (level)
-            1D NumPy array of eta coordinate values.
+#     Inputs:
+#     -------
+#     1) field3d  (lon, lat, level)
+#             3D NumPy array to take partial derivative on.
+#             This field must be defined on the eta levels!!!
+#     2) alpha_x  (lon, lat, level)
+#             3D NumPy array containing alpha_x values.
+#     3) lon1d (lon)
+#             1D NumPy array of longitude values (in degrees).
+#     4) lat1d (lat)
+#             1D NumPy array of latitude values (in degrees).
+#     5) eta1d (level)
+#             1D NumPy array of eta coordinate values.
 
-    Returns a 3D NumPy array (lon, lat, level) containing the partial derivative with respect to pressure. 
+#     Returns a 3D NumPy array (lon, lat, level) containing the partial derivative with respect to pressure. 
 
-    Uses the approach of Kasahara 1974 to compute (df/dx)_P when the data is actually defined on terrain-following coordinates.
-'''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
-def compute_df_dx_on_pres_surface( field3d, alpha_x, lon1d, lat1d, eta1d ):
+#     Uses the approach of Kasahara 1974 to compute (df/dx)_P when the data is actually defined on terrain-following coordinates.
+# '''
+# #njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
+# def compute_df_dx_on_pres_surface( field3d, alpha_x, lon1d, lat1d, eta1d ):
 
-    # Compute x-derivative on eta surface
-    output = compute_df_dx_on_eta_surface( field3d, lon1d, lat1d )
+#     # Compute x-derivative on eta surface
+#     output = compute_df_dx_on_eta_surface( field3d, lon1d, lat1d )
 
-    # Compute alpha offset term
-    output -= alpha_x * compute_df_dN( field3d, eta1d )
+#     # Compute alpha offset term
+#     output -= alpha_x * compute_df_dN( field3d, eta1d )
 
-    return output
+#     return output
 
 
 
@@ -734,37 +734,37 @@ def compute_df_dx_on_pres_surface( field3d, alpha_x, lon1d, lat1d, eta1d ):
 
 
 
-'''
-    Function to compute ( df/dy )_P
+# '''
+#     Function to compute ( df/dy )_P
 
-    Inputs:
-    -------
-    1) field3d  (lon, lat, level)
-            3D NumPy array to take partial derivative on.
-            This field must be defined on the eta levels!!!
-    2) alpha_y  (lon, lat, level)
-            3D NumPy array containing alpha_x values.
-    3) lon1d (lon)
-            1D NumPy array of longitude values (in degrees).
-    4) lat1d (lat)
-            1D NumPy array of latitude values (in degrees).
-    5) eta1d (level)
-            1D NumPy array of eta coordinate values.
+#     Inputs:
+#     -------
+#     1) field3d  (lon, lat, level)
+#             3D NumPy array to take partial derivative on.
+#             This field must be defined on the eta levels!!!
+#     2) alpha_y  (lon, lat, level)
+#             3D NumPy array containing alpha_x values.
+#     3) lon1d (lon)
+#             1D NumPy array of longitude values (in degrees).
+#     4) lat1d (lat)
+#             1D NumPy array of latitude values (in degrees).
+#     5) eta1d (level)
+#             1D NumPy array of eta coordinate values.
 
-    Returns a 3D NumPy array (lon, lat, level) containing the partial derivative with respect to pressure. 
+#     Returns a 3D NumPy array (lon, lat, level) containing the partial derivative with respect to pressure. 
 
-    Uses the approach of Kasahara 1974 to compute (df/dx)_P when the data is actually defined on terrain-following coordinates.
-'''
-@njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
-def compute_df_dy_on_pres_surface( field3d, alpha_y, lon1d, lat1d, eta1d ):
+#     Uses the approach of Kasahara 1974 to compute (df/dx)_P when the data is actually defined on terrain-following coordinates.
+# '''
+# #njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ), cache=jit_cache_flag )
+# def compute_df_dy_on_pres_surface( field3d, alpha_y, lon1d, lat1d, eta1d ):
 
-    # Compute x-derivative on eta surface
-    output = compute_df_dy_on_eta_surface( field3d, lon1d, lat1d )
+#     # Compute x-derivative on eta surface
+#     output = compute_df_dy_on_eta_surface( field3d, lon1d, lat1d )
 
-    # Compute alpha offset term
-    output -= alpha_y * compute_df_dN( field3d, eta1d )
+#     # Compute alpha offset term
+#     output -= alpha_y * compute_df_dN( field3d, eta1d )
 
-    return output
+#     return output
 
 
 
@@ -806,46 +806,46 @@ def compute_df_dy_on_pres_surface( field3d, alpha_y, lon1d, lat1d, eta1d ):
 
 
 
-'''
-    FUNCTIONS TO COMPUTE THERMODYNAMIC QUANTITIES NEEDED TO SOLVE NONLINEAR BALANCE EQUATIONS ON TERRAIN-FOLLOWING GRID
-'''
+# '''
+#     FUNCTIONS TO COMPUTE THERMODYNAMIC QUANTITIES NEEDED TO SOLVE NONLINEAR BALANCE EQUATIONS ON TERRAIN-FOLLOWING GRID
+# '''
 
 
 
-'''
-    Function to compute (dN/dP) * (dP/dx)_N (i.e., the constant field alpha_x)
+# '''
+#     Function to compute (dN/dP) * (dP/dx)_N (i.e., the constant field alpha_x)
 
-    Inputs:
-    -------
-    1) eta1d  (level)
-            1D NumPy array of eta coordinate values (recall: eta is the terrain-following vertical coordinate)
-    2) pres3d (lon, lat, level)
-            3D NumPy array of pressure values.
-    3) lon1d (lon)
-            1D NumPy array of longitude values (in degrees).
-    4) lat1d (lat)
-            1D NumPy array of latitude values (in degrees).
+#     Inputs:
+#     -------
+#     1) eta1d  (level)
+#             1D NumPy array of eta coordinate values (recall: eta is the terrain-following vertical coordinate)
+#     2) pres3d (lon, lat, level)
+#             3D NumPy array of pressure values.
+#     3) lon1d (lon)
+#             1D NumPy array of longitude values (in degrees).
+#     4) lat1d (lat)
+#             1D NumPy array of latitude values (in degrees).
 
-    Returns a 3D NumPy array (lon, lat, level) of alpha_x values
-'''
-@njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
-def compute_alpha_x( eta1d, pres3d, lon1d, lat1d ):
+#     Returns a 3D NumPy array (lon, lat, level) of alpha_x values
+# '''
+# #njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+# def compute_alpha_x( eta1d, pres3d, lon1d, lat1d ):
 
-    # Generate 3D array of eta values
-    eta3d = np.empty( pres3d.shape, dtype='f8' )
-    for k, eta in enumerate( eta1d ):
-        eta3d[:,:,k] = eta
+#     # Generate 3D array of eta values
+#     eta3d = np.empty( pres3d.shape, dtype='f8' )
+#     for k, eta in enumerate( eta1d ):
+#         eta3d[:,:,k] = eta
 
-    # Compute dN/dP
-    dN_dP = compute_df_dP( eta3d, pres3d )
+#     # Compute dN/dP
+#     dN_dP = compute_df_dP( eta3d, pres3d )
 
-    # Compute (dP/dx)_N
-    dP_dx_on_eta_lvls = compute_df_dx_on_eta_surface( 
-        pres3d, lon1d, lat1d
-    )
+#     # Compute (dP/dx)_N
+#     dP_dx_on_eta_lvls = compute_df_dx_on_eta_surface( 
+#         pres3d, lon1d, lat1d
+#     )
 
-    # Return the alpha_x values
-    return dN_dP * dP_dx_on_eta_lvls
+#     # Return the alpha_x values
+#     return dN_dP * dP_dx_on_eta_lvls
 
 
 
@@ -855,40 +855,40 @@ def compute_alpha_x( eta1d, pres3d, lon1d, lat1d ):
 
 
 
-'''
-    Function to compute (dN/dP) * (dP/dy)_N (i.e., the constant field alpha_y)
+# '''
+#     Function to compute (dN/dP) * (dP/dy)_N (i.e., the constant field alpha_y)
 
-    Inputs:
-    -------
-    1) eta1d  (level)
-            1D NumPy array of eta coordinate values (recall: eta is the terrain-following vertical coordinate)
-    2) pres3d (lon, lat, level)
-            3D NumPy array of pressure values.
-    3) lon1d (lon)
-            1D NumPy array of longitude values (in degrees).
-    4) lat1d (lat)
-            1D NumPy array of latitude values (in degrees).
+#     Inputs:
+#     -------
+#     1) eta1d  (level)
+#             1D NumPy array of eta coordinate values (recall: eta is the terrain-following vertical coordinate)
+#     2) pres3d (lon, lat, level)
+#             3D NumPy array of pressure values.
+#     3) lon1d (lon)
+#             1D NumPy array of longitude values (in degrees).
+#     4) lat1d (lat)
+#             1D NumPy array of latitude values (in degrees).
 
-    Returns a 3D NumPy array (lon, lat, level) of alpha_y values
-'''
-@njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
-def compute_alpha_y( eta1d, pres3d, lon1d, lat1d ):
+#     Returns a 3D NumPy array (lon, lat, level) of alpha_y values
+# '''
+# #njit( float64[:,:,:]( float64[:,], float64[:,:,:], float64[:], float64[:] ), cache=jit_cache_flag )
+# def compute_alpha_y( eta1d, pres3d, lon1d, lat1d ):
 
-    # Generate 3D array of eta values
-    eta3d = np.empty( pres3d.shape, dtype='f8' )
-    for k, eta in enumerate( eta1d ):
-        eta3d[:,:,k] = eta1d[k]
+#     # Generate 3D array of eta values
+#     eta3d = np.empty( pres3d.shape, dtype='f8' )
+#     for k, eta in enumerate( eta1d ):
+#         eta3d[:,:,k] = eta1d[k]
 
-    # Compute dN/dP
-    dN_dP = compute_df_dP( eta3d, pres3d )
+#     # Compute dN/dP
+#     dN_dP = compute_df_dP( eta3d, pres3d )
 
-    # Compute (dP/dy)_N
-    dP_dy_on_eta_lvls = compute_df_dy_on_eta_surface( 
-        pres3d, lon1d, lat1d
-    )
+#     # Compute (dP/dy)_N
+#     dP_dy_on_eta_lvls = compute_df_dy_on_eta_surface( 
+#         pres3d, lon1d, lat1d
+#     )
 
-    # Return the alpha_x values
-    return dN_dP * dP_dy_on_eta_lvls
+#     # Return the alpha_x values
+#     return dN_dP * dP_dy_on_eta_lvls
 
 
 
@@ -1009,68 +1009,54 @@ def SANITY_CHECK_spatial_derivatives():
 
 
 
-'''
-    Function to invert Poisson equation via spherical harmonics
+# '''
+#     Function to invert Poisson equation via spherical harmonics
 
-    Inputs:
-    -------
-    1) vort3d (lon, lat, level)
-        3D NumPy array of "right-hand-side" terms in Poisson equation
+#     Inputs:
+#     -------
+#     1) vort3d (lon, lat, level)
+#         3D NumPy array of "right-hand-side" terms in Poisson equation
 
-    Returns a 3D NumPy array (lon, lat, level) containing the inverted values
-'''
-def spherical_invert_poisson_equation( vort3d ):
+#     Returns a 3D NumPy array (lon, lat, level) containing the inverted values
+# '''
+# def spherical_invert_poisson_equation( vort3d ):
 
-    # Handy constant
-    EARTH_RADIUS = 6371*1000 # in meters
+#     # Handy constant
+#     EARTH_RADIUS = 6371*1000 # in meters
 
-    # Array dimensions
-    nlon, nlat, nlvl = vort3d.shape
-    ndeg = int(nlat/2)
-
-
-    # Special hanndling for situation where nlon = nlat*2
-    if ( nlon==nlat*2 ):
-        vort3d = vort3d[::2,:,:]
+#     # Array dimensions
+#     nlon, nlat, nlvl = vort3d.shape
+#     ndeg = int(nlat/2)
 
 
-    # Convert lat-lon grid vorticity to spherical harmonic spectral grid vorticity
-    vort3d_coeffs = np.empty( (2, int(nlat/2), int(nlat/2), nlvl ), dtype='f8' )
-    for ilvl in range( nlvl ):
-        vort3d_coeffs[:,:,:,ilvl] = SHExpandDH( vort3d[:,:,ilvl].T )
-    # --- End of loop over model levels
+#     # Special hanndling for situation where nlon = nlat*2
+#     if ( nlon==nlat*2 ):
+#         vort3d = vort3d[::2,:,:]
 
-    # Invert the laplacian operator for streamfunction (equation below)
-    #    laplacian( streamfunc ) = vorticity
-    streamfunc_coeffs = vort3d_coeffs * (EARTH_RADIUS**2) * -1
-    for ideg in range( 1, ndeg ):
-        streamfunc_coeffs[:,ideg,:,:] /= (ideg * (ideg+1) )
-    # End of loop over spherical harmonic degrees
+
+#     # Convert lat-lon grid vorticity to spherical harmonic spectral grid vorticity
+#     vort3d_coeffs = np.empty( (2, int(nlat/2), int(nlat/2), nlvl ), dtype='f8' )
+#     for ilvl in range( nlvl ):
+#         vort3d_coeffs[:,:,:,ilvl] = SHExpandDH( vort3d[:,:,ilvl].T )
+#     # --- End of loop over model levels
+
+#     # Invert the laplacian operator for streamfunction (equation below)
+#     #    laplacian( streamfunc ) = vorticity
+#     streamfunc_coeffs = vort3d_coeffs * (EARTH_RADIUS**2) * -1
+#     for ideg in range( 1, streamfunc_coeffs.shape[1] ):
+#         streamfunc_coeffs[:,ideg,:,:] /= (ideg * (ideg+1) )
+        
+#     # End of loop over spherical harmonic degrees
     
-    # Convert streamfunction from spectral grid to lat-lon grid
-    streamfunc = np.empty( (nlon, nlat, nlvl), dtype='f8')
-    for ilvl in range( nlvl ):
-        if ( nlon==nlat*2 ):
-            streamfunc[:,:,ilvl] = MakeGridDH( streamfunc_coeffs[:,:,:,ilvl], sampling=2 ).T
-        else:
-            streamfunc[:,:,ilvl] = MakeGridDH( streamfunc_coeffs[:,:,:,ilvl] ).T
+#     # Convert streamfunction from spectral grid to lat-lon grid
+#     streamfunc = np.empty( (nlon, nlat, nlvl), dtype='f8')
+#     for ilvl in range( nlvl ):
+#         if ( nlon==nlat*2 ):
+#             streamfunc[:,:,ilvl] = MakeGridDH( streamfunc_coeffs[:,:,:,ilvl], sampling=2 ).T
+#         else:
+#             streamfunc[:,:,ilvl] = MakeGridDH( streamfunc_coeffs[:,:,:,ilvl] ).T
 
-    return streamfunc
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#     return streamfunc
 
 
 
@@ -1081,18 +1067,55 @@ def spherical_invert_poisson_equation( vort3d ):
 
 
 '''
-    SANITY CHECKS
+    FUNCTION TO INVERT FIRST-ORDER DERIVATIVE ON A RING
 '''
-if __name__ == '__main__':
+# @njit( float64[:]( float64[:], float64 ) ) 
+def invert_first_order_derivative_periodic( derivative1d, interval ):
 
-    print( 
-        '\nTime spent on eager compilation of functions: %d seconds\n' 
-        % (time()-t0)
-    )
+    # Useful constants
+    n_pts = derivative1d.shape[0]
 
-    SANITY_CHECK_spatial_derivatives()
+    # Array to hold integral
+    integral  = np.zeros( n_pts, dtype='f8')
 
-    SANITY_CHECK_pad_field_due_to_spherical_symmetry()
+    # Fourier expand the derivative
+    fft_dfdx = np.fft.fft( derivative1d )
+    fftfreq = np.fft.fftfreq( n_pts )
+
+    # Inverting derivative in wavenumber space
+    flag_nonzero = ( fftfreq != 0 )
+    fft_field = fft_dfdx * 0.
+    fft_field[flag_nonzero] = fft_dfdx[flag_nonzero] / (fftfreq[flag_nonzero] *1j * 2*PI)
+
+    # Invert Fourier expansion
+    integral = np.fft.ifft( fft_field ) * interval
+
+    return integral.real
 
 
-    print('meow')
+
+
+
+
+
+
+
+
+
+
+# '''
+#     SANITY CHECKS
+# '''
+# if __name__ == '__main__':
+
+#     print( 
+#         '\nTime spent on eager compilation of functions: %d seconds\n' 
+#         % (time()-t0)
+#     )
+
+#     SANITY_CHECK_spatial_derivatives()
+
+#     SANITY_CHECK_pad_field_due_to_spherical_symmetry()
+
+
+#     print('meow')
