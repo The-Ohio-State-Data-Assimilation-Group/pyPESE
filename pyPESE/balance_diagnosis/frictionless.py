@@ -26,6 +26,7 @@ from numba import float64
 from numba.types import Tuple as nbtuple
 from math import pi as PI
 from time import time
+from scipy.ndimage import gaussian_filter
 
 # Load all functions relating to taking spatial derivatives & spherical padding
 from pyPESE.utilities.global_latlon_grid import *
@@ -38,6 +39,14 @@ t0 = time()
 
 # flag for caching
 jit_cache_flag = False
+
+
+
+
+
+
+
+
 
 
 
@@ -74,11 +83,13 @@ jit_cache_flag = False
     5) lat1d (lat)
             1D NumPy array of latitude values (in degrees). 
 '''
+# @njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:], float64[:], float64[:] ) )
 def compute_geopotential_from_frictionless_3d_flow( uwind3d, vwind3d, wwind3d, lon1d, lat1d, plvls1d ):
 
     # Useful constants
     DEG_2_RAD = PI/180
     EARTH_ANGULAR_SPEED = 7.2921159e-5
+    EARTH_RADIUS = 6378*1000
     GRAVITY_ACCEL = 9.80665 
 
     # Obtain info about dimensions
@@ -100,8 +111,7 @@ def compute_geopotential_from_frictionless_3d_flow( uwind3d, vwind3d, wwind3d, l
     for kk in range(nlvl):
         pres3d[:,:,kk] = plvls1d[kk]
 
-
-    # Compute advection and coriolis terms for eastward momentum
+    # terms from the x-direction primitive equation
     xterms = (
         # Advection terms
         uwind3d * compute_df_dx_on_eta_surface(pu3d, plon1d, plat1d)[1:-1,1:-1]
@@ -110,32 +120,41 @@ def compute_geopotential_from_frictionless_3d_flow( uwind3d, vwind3d, wwind3d, l
         # Coriolis term
         - coriolis_param3d * vwind3d
     )
+    xterms *= -1
 
 
-    # Compute advection and coriolis terms for northward momentum
-    yterms = (
-        # Advection terms
-        uwind3d * compute_df_dx_on_eta_surface(pv3d, plon1d, plat1d)[1:-1,1:-1]
-        + vwind3d * compute_df_dy_on_eta_surface(pv3d, plon1d, plat1d)[1:-1,1:-1]
-        + wwind3d * compute_df_dP( vwind3d, pres3d )
-        # Coriolis term
-        + coriolis_param3d * uwind3d
-    )
+    # Integrate away the x-derivative
+    geopot3d  = np.zeros( (nlon, nlat, nlvl), dtype='f8' )
+    for j in range( nlat ):
+        lon_interval = (lon1d[1]-lon1d[0]) * EARTH_RADIUS * DEG_2_RAD * np.cos( lat1d[j] * DEG_2_RAD )
+        for k in range(nlvl):
+            geopot3d[:,j,k] = invert_first_order_derivative_periodic( xterms[:,j,k], lon_interval )
+        # --- End of loop over lvls
+    # --- End of loop over latitudes
 
-    # Compute convergence of forces
-    plon1d, plat1d, pxterms = pad_field_due_to_spherical_symmetry( xterms, lon1d, lat1d)
-    plon1d, plat1d, pyterms = pad_field_due_to_spherical_symmetry( yterms, lon1d, lat1d)
-    conv_terms = (
-        compute_df_dx_on_eta_surface( pxterms, plon1d, plat1d )[1:-1,1:-1,:]
-        + compute_df_dy_on_eta_surface( pyterms, plon1d, plat1d )[1:-1,1:-1,:]
-    ) * (-1)
-    
-    # Solve Poisson equation to obtain balanced geopotential's spatial perturbations
-    zero_mean_geopot3d = spherical_invert_poisson_equation( conv_terms )
-    zero_mean_geopot3d -= np.mean( np.mean( zero_mean_geopot3d, axis=0), axis=0 )
+
+    # Kill off small-scale signals (mimicking numerical diffusion in NWP models)
+    for k in range(nlvl):
+        geopot3d[:,:,k] = gaussian_filter( geopot3d[:,:,k], sigma=2,  mode=('wrap','reflect') )
+        # Note: Tried sigma=1, 2, and 3. Sigma=2 is the smallest trialed sigma value that produces visually
+        # ok geopotential heights.
+
+    # The integration process is accurate up to a constant. Removing said constant.
+    zero_mean_geopot3d = geopot3d - np.mean( geopot3d, axis=0 )
+
+
 
     # Return mean-zero geopotential
-    return zero_mean_geopot3d 
+    return zero_mean_geopot3d
+
+
+
+
+
+
+
+
+
 
 
 
@@ -173,15 +192,16 @@ def compute_geopotential_from_frictionless_3d_flow( uwind3d, vwind3d, wwind3d, l
     9) lat1d (lat)
             1D NumPy array of latitude values (in degrees). 
 '''
-def compute_balanced_geopotential_from_frictionles_hydrostatic_flow_on_eta_lvls( uwind3d, vwind3d, wwind3d, pres3d, hgt3d, psurf2d, tsurf2d, terrain2d, lon1d, lat1d ):
+# @njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:], float64[:,:], float64[:,:], float64[:], float64[:] ) )
+def compute_balanced_geopotential_heights_from_frictionles_hydrostatic_flow_on_eta_lvls( uwind3d, vwind3d, wwind3d, pres3d, hgt3d, psurf2d, tsurf2d, terrain2d, lon1d, lat1d ):
 
     # Detect dimensions
     nlon, nlat, neta = uwind3d.shape
     nplvl = 201
 
     # Useful constants
-    GRAVITY_ACCEL = 9.80665 
-    
+    GRAVITY_ACCEL = 9.81
+
     # Pressure layers to do calculations on 
     plvls1d = np.linspace( pres3d.min(), 1.01e5, nplvl)[::-1]
 
@@ -196,13 +216,15 @@ def compute_balanced_geopotential_from_frictionles_hydrostatic_flow_on_eta_lvls(
     )
 
     # Compute geopotnetial with mean zero
-    mean_zero_geopot = compute_geopotential_from_frictionless_3d_flow( uwind_plvl, vwind_plvl, wwind_plvl, lon1d, lat1d, plvls1d )
+    mean_zero_geopot = compute_geopotential_from_frictionless_3d_flow( 
+        uwind_plvl, vwind_plvl, wwind_plvl, lon1d, lat1d, plvls1d 
+    )
 
     # Adjust the layerwise mean of the geooptential
-    geopot_plvl = mean_zero_geopot + np.mean( np.mean( geoopot_plvl, axis=0), axis=0)
+    geopot_plvl = mean_zero_geopot + np.mean( geoopot_plvl, axis=0)
 
     # Interpolate geopotential from plvls back to eta lvls
     geopot3d = basic_interpolate_to_eta_levs( plvls1d, geopot_plvl, pres3d )
 
 
-    return geopot3d
+    return geopot3d/GRAVITY_ACCEL

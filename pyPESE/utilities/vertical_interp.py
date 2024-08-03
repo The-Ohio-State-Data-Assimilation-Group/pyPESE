@@ -28,15 +28,6 @@ flag_jit_cache = False
 
 
 
-'''
-
-'''
-
-
-
-
-
-
 
 
 
@@ -45,7 +36,7 @@ flag_jit_cache = False
 '''
     BASIC INTERPOLATION ONTO PRESSURE LEVELS
 '''
-@njit(  nb_f64[:,:,:]( nb_f64[:,:,:], nb_f64[:,:,:], nb_f64[:] ), cache=flag_jit_cache)
+# @njit(  nb_f64[:,:,:]( nb_f64[:,:,:], nb_f64[:,:,:], nb_f64[:] ), cache=flag_jit_cache)
 def basic_interpolate_to_pressure_levs( pres3d, data_arr3d, plvls1d):
 
     # Ascertain dimensions
@@ -77,11 +68,7 @@ def basic_interpolate_to_pressure_levs( pres3d, data_arr3d, plvls1d):
     Uses linear interpolation for above-ground situations.
     Uses Trenberth et al (1993) Eq 15 for sub-surface interpolation
 '''
-@njit(
-    nb_f64[:,:,:](
-        nb_f64[:,:,:], nb_f64[:,:,:], nb_f64[:,:], nb_f64[:,:], nb_f64[:,:], nb_f64[:]
-    ), cache=flag_jit_cache
-)
+# @njit( nb_f64[:,:,:]( nb_f64[:,:,:], nb_f64[:,:,:], nb_f64[:,:], nb_f64[:,:], nb_f64[:,:], nb_f64[:] ), cache=flag_jit_cache)
 def interp_geopotential_to_plvls( geopot3d, pres3d, psurf2d, tsurf2d, terrain2d, plvls1d ):
 
     # Extract dimensions
@@ -155,7 +142,7 @@ def interp_geopotential_to_plvls( geopot3d, pres3d, psurf2d, tsurf2d, terrain2d,
 '''
     BASIC INTERPOLATION FROM PRESSURE LEVELS TO ETA LEVELS
 '''
-@njit(  nb_f64[:,:,:]( nb_f64[:], nb_f64[:,:,:], nb_f64[:,:,:] ), cache=flag_jit_cache)
+#njit(  nb_f64[:,:,:]( nb_f64[:], nb_f64[:,:,:], nb_f64[:,:,:] ), cache=flag_jit_cache)
 def basic_interpolate_to_eta_levs( plvls1d, data_plvls, pres3d):
 
     # Ascertain dimensions
