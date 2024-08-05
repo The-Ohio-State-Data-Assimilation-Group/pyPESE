@@ -179,8 +179,6 @@ def compute_geopotential_from_frictionless_3d_flow( uwind3d, vwind3d, wwind3d, l
             3D NumPy array of meridional wind velocities on ETA LEVELS.
     3) pres3d (lon, lat, level)
             3D NumPy array of pressure values on ETA LEVELS in UNITS OF PASCALS
-    4) hgt3d (lon, lat, level)
-            3D NumPy array of geopotential heights on ETA LEVELS.
     5) psurf2d (lon, lat)
             2D NumPy array of surface pressure in pascals
     6) tsurf2d (lon, lat)
@@ -193,7 +191,7 @@ def compute_geopotential_from_frictionless_3d_flow( uwind3d, vwind3d, wwind3d, l
             1D NumPy array of latitude values (in degrees). 
 '''
 # @njit( float64[:,:,:]( float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:,:], float64[:,:], float64[:,:], float64[:,:], float64[:], float64[:] ) )
-def compute_balanced_geopotential_heights_from_frictionles_hydrostatic_flow_on_eta_lvls( uwind3d, vwind3d, wwind3d, pres3d, hgt3d, psurf2d, tsurf2d, terrain2d, lon1d, lat1d ):
+def compute_balanced_geopotential_heights_from_frictionles_hydrostatic_flow_on_eta_lvls( uwind3d, vwind3d, wwind3d, pres3d, psurf2d, tsurf2d, terrain2d, lon1d, lat1d ):
 
     # Detect dimensions
     nlon, nlat, neta = uwind3d.shape
@@ -210,21 +208,12 @@ def compute_balanced_geopotential_heights_from_frictionles_hydrostatic_flow_on_e
     vwind_plvl = basic_interpolate_to_pressure_levs( pres3d, vwind3d, plvls1d)
     wwind_plvl = basic_interpolate_to_pressure_levs( pres3d, wwind3d, plvls1d)
 
-    # Interpolate geopotential to pressure levels
-    geoopot_plvl = interp_geopotential_to_plvls( 
-        hgt3d*GRAVITY_ACCEL, pres3d, psurf2d, tsurf2d, terrain2d, plvls1d
-    )
-
     # Compute geopotnetial with mean zero
     mean_zero_geopot = compute_geopotential_from_frictionless_3d_flow( 
         uwind_plvl, vwind_plvl, wwind_plvl, lon1d, lat1d, plvls1d 
     )
 
-    # Adjust the layerwise mean of the geooptential
-    geopot_plvl = mean_zero_geopot + np.mean( geoopot_plvl, axis=0)
-
     # Interpolate geopotential from plvls back to eta lvls
-    geopot3d = basic_interpolate_to_eta_levs( plvls1d, geopot_plvl, pres3d )
+    mean_zero_geopot = basic_interpolate_to_eta_levs( plvls1d, mean_zero_geopot, pres3d )
 
-
-    return geopot3d/GRAVITY_ACCEL
+    return mean_zero_geopot/GRAVITY_ACCEL
