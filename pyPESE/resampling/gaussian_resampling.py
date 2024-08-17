@@ -306,7 +306,7 @@ if __name__ == '__main__':
 
     expanded_ens = np.zeros( (100,ens_size_original+ens_size_virtual) ) 
     expanded_ens[:,:10] = original_ens
-    expanded_ens[:,10:] = fast_gaussian_resampling( original_ens, ens_size_virtual, rng_seed = 0 )
+    expanded_ens[:,10:] = fast_unlocalized_gaussian_resampling( original_ens, ens_size_virtual, rng_seed = 0 )
 
     print('')
     print( np.cov( expanded_ens[::25] ))
