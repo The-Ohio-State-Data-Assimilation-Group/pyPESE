@@ -11,7 +11,10 @@
 
 # Load standard Python packages
 import numpy as np
-from scipy.stats import norm
+# from scipy.stats import norm
+
+# Using Joseph's ~20x faster STANDARD_NORMAL_INSTANCE for calculations
+from pyPESE.distributions.gaussian import STANDARD_NORMAL_INSTANCE as norm
 
 # Load pyPESE's custom packages
 from pyPESE.resampling.gaussian_resampling import compute_unlocalized_gaussian_resampling_coefficients
