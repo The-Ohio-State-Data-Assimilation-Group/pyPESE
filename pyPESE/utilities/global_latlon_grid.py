@@ -39,7 +39,7 @@ from math import pi as PI
 
 from time import time
 
-# from pyshtools.expand import MakeGridDH, SHExpandDH
+from pyshtools.expand import MakeGridDH, SHExpandDH
 
 t0 = time()
 
@@ -1009,54 +1009,57 @@ def SANITY_CHECK_spatial_derivatives():
 
 
 
-# '''
-#     Function to invert Poisson equation via spherical harmonics
+'''
+    Function to invert Poisson equation via spherical harmonics
 
-#     Inputs:
-#     -------
-#     1) vort3d (lon, lat, level)
-#         3D NumPy array of "right-hand-side" terms in Poisson equation
+    Inputs:
+    -------
+    1) vort3d (lon, lat, level)
+        3D NumPy array of "right-hand-side" terms in Poisson equation
 
-#     Returns a 3D NumPy array (lon, lat, level) containing the inverted values
-# '''
-# def spherical_invert_poisson_equation( vort3d ):
+    Returns a 3D NumPy array (lon, lat, level) containing the inverted values
+'''
+def spherical_invert_poisson_equation( vort3d ):
 
-#     # Handy constant
-#     EARTH_RADIUS = 6371*1000 # in meters
+    # Handy constant
+    EARTH_RADIUS = 6371*1000 # in meters
 
-#     # Array dimensions
-#     nlon, nlat, nlvl = vort3d.shape
-#     ndeg = int(nlat/2)
-
-
-#     # Special hanndling for situation where nlon = nlat*2
-#     if ( nlon==nlat*2 ):
-#         vort3d = vort3d[::2,:,:]
+    # Array dimensions
+    nlon, nlat, nlvl = vort3d.shape
+    ndeg = int(nlat/2)
 
 
-#     # Convert lat-lon grid vorticity to spherical harmonic spectral grid vorticity
-#     vort3d_coeffs = np.empty( (2, int(nlat/2), int(nlat/2), nlvl ), dtype='f8' )
-#     for ilvl in range( nlvl ):
-#         vort3d_coeffs[:,:,:,ilvl] = SHExpandDH( vort3d[:,:,ilvl].T )
-#     # --- End of loop over model levels
+    # Special hanndling for situation where nlon = nlat*2
+    if ( nlon==nlat*2 ):
+        vort3d = vort3d[::2,:,:]
 
-#     # Invert the laplacian operator for streamfunction (equation below)
-#     #    laplacian( streamfunc ) = vorticity
-#     streamfunc_coeffs = vort3d_coeffs * (EARTH_RADIUS**2) * -1
-#     for ideg in range( 1, streamfunc_coeffs.shape[1] ):
-#         streamfunc_coeffs[:,ideg,:,:] /= (ideg * (ideg+1) )
+
+    # Convert lat-lon grid vorticity to spherical harmonic spectral grid vorticity
+    vort3d_coeffs = np.empty( (2, int(nlat/2), int(nlat/2), nlvl ), dtype='f8' )
+    for ilvl in range( nlvl ):
+        vort3d_coeffs[:,:,:,ilvl] = SHExpandDH( vort3d[:,:,ilvl].T )
+    # --- End of loop over model levels
+
+    # Invert the laplacian operator for streamfunction (equation below)
+    #    laplacian( streamfunc ) = vorticity
+    streamfunc_coeffs = vort3d_coeffs * (EARTH_RADIUS**2) * -1
+    for ideg in range( 1, streamfunc_coeffs.shape[1] ):
+        streamfunc_coeffs[:,ideg,:,:] /= (ideg * (ideg+1) )
         
-#     # End of loop over spherical harmonic degrees
+    # End of loop over spherical harmonic degrees
     
-#     # Convert streamfunction from spectral grid to lat-lon grid
-#     streamfunc = np.empty( (nlon, nlat, nlvl), dtype='f8')
-#     for ilvl in range( nlvl ):
-#         if ( nlon==nlat*2 ):
-#             streamfunc[:,:,ilvl] = MakeGridDH( streamfunc_coeffs[:,:,:,ilvl], sampling=2 ).T
-#         else:
-#             streamfunc[:,:,ilvl] = MakeGridDH( streamfunc_coeffs[:,:,:,ilvl] ).T
+    # Convert streamfunction from spectral grid to lat-lon grid
+    streamfunc = np.empty( (nlon, nlat, nlvl), dtype='f8')
+    for ilvl in range( nlvl ):
+        if ( nlon==nlat*2 ):
+            streamfunc[:,:,ilvl] = MakeGridDH( streamfunc_coeffs[:,:,:,ilvl], sampling=2 ).T
+        else:
+            streamfunc[:,:,ilvl] = MakeGridDH( streamfunc_coeffs[:,:,:,ilvl] ).T
 
-#     return streamfunc
+    return streamfunc
+
+
+
 
 
 
@@ -1094,8 +1097,23 @@ def invert_first_order_derivative_periodic( derivative1d, interval ):
 
 
 
+@njit(  float64[:](float64[:], float64) )
+def invert_first_order_derivative( derivative1d, interval ):
 
+    # Useful constants
+    n_pts = derivative1d.shape[0]
 
+    # Array to hold integral
+    integral  = np.zeros( n_pts, dtype='f8')
+
+    # Perform trapezoidal integral
+    for ipt in range(1,n_pts):
+        integral[ipt] = (
+            integral[ipt-1] 
+            + 0.5*(derivative1d[ipt-1] + derivative1d[ipt]) * interval
+        )
+
+    return integral
 
 
 
