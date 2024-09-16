@@ -18,6 +18,7 @@ from pyPESE.distributions.gaussian import STANDARD_NORMAL_INSTANCE as norm
 
 # Load pyPESE's custom packages
 from pyPESE.resampling.gaussian_resampling import compute_unlocalized_gaussian_resampling_coefficients
+from pyPESE.resampling.local_gaussian_resampling import compute_localized_gaussian_resampling_coefficients
 
 # Load pyPESE's ensemble preprocessor to deal with duplicate/out-of-bounds values
 from pyPESE.utilities.preprocess_ens import preprocess_ens
@@ -229,3 +230,131 @@ def pese_gc( fcst_ens_2d, list_of_dist_classes, list_extra_args, num_virt_ens, r
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+    MAIN FUNCTION TO EVOKE UNIVARIATE PESE-GC
+
+    This function is useful for performing localized PESE-GC. 
+
+    
+    Mandatory Inputs:
+    ------------------
+    1) fcst_ens_1d (dimensions: num_fcst_ens)
+            1D NumPy float array containing forecast ensemble data
+
+    2) dist_class  (a Python class)
+            The distribution class used for this variable.
+            Two kinds of distribution classes are currently supported:
+                a) scipy.stats distribution classes (e.g., skewnorm, gamma, norm)
+                b) pyPESE-defined distributions 
+    
+    3) extra_args (a Python dictionary)
+            A Python dictionaries. 
+            Each dictionary contains information needed for preprocessing the ensemble
+            and to evoke the distribution fitting process.
+
+    4) gauss_resamp_matrix ( num_fcst_ens x num_virt_ens )
+            2D NumPy array of coefficients used to resample the forecast ensemble in probit space
+'''
+def pese_gc_univariate( fcst_ens_1d, dist_class, extra_args, gauss_resamp_matrix ): 
+
+    # Determine all dimension sizes
+    num_fcst_ens, num_virt_ens = gauss_resamp_matrix.shape
+    
+    # Check if number of virtual members is appropriate.
+    if ( num_virt_ens <= num_fcst_ens ):
+        print( 'ERROR: pese_gc')
+        print( '    Number of virtual members must be more than number of original members')
+        quit()
+    # --- End of if-statement used to do check
+
+
+    # Preamble: Compute first two raw moments of the ensemble 
+    #           These moments are useful for fitting the bounded boxcar rank histogram
+    #           distribution.
+    extra_args['raw moment 1'] = np.mean( fcst_ens_1d )
+    extra_args['raw moment 2'] = np.mean( np.power(fcst_ens_1d, 2) )
+
+
+    # Preamble: If min and max bounds are not provided in list_extra_args, then 
+    #           supplement with the max and min bounds of the forecast ensemble
+    offsetting_interval = np.std( fcst_ens_1d ) * 3./num_fcst_ens
+    if ( 'min bound' not in extra_args ):
+        extra_args['min bound'] = fcst_ens_1d.min() - offsetting_interval
+    if ( 'max bound' not in extra_args ):
+        extra_args['max bound'] = fcst_ens_1d.max() + offsetting_interval
+
+
+    # Preamble: Handling situation where the min bound and the max bound are the same
+    support = extra_args['max bound'] - extra_args['min bound']
+    if ( np.abs(support) < 4e-5 ):    
+        if ( np.abs(extra_args['min bound']) > 1e-3 ):
+            extra_args['min bound'] -= extra_args['min bound'] * 2e-5
+            extra_args['max bound'] += extra_args['min bound'] * 2e-5
+        else:
+            extra_args['min bound'] = -2e-5
+            extra_args['max bound'] = 2e-5
+    # --- End of handling degenerate ensemble bounds            
+
+
+    # Preamble: Remove duplicates and/or out-of-bounds values from ensemble
+    fcst_ens_1d = preprocess_ens( 
+        fcst_ens_1d, min_bound = extra_args['min bound'],
+        max_bound = extra_args['max bound'] 
+    )
+
+    # Step 1: Fit distribution to fcst ensembel for selected variable
+    fitted_dist = univariate_dist_fit(
+        fcst_ens_1d, dist_class, extra_args
+    )
+
+    # Step 2: Transform forecast ensemble into probit space
+    fcst_probit = norm.ppf( fitted_dist.cdf( fcst_ens_1d ) )[None,:]
+    if ( np.sum( np.isnan(fcst_probit) + np.isinf(fcst_probit) ) > 0 ):
+        print( 
+            'ERROR: Invalid value detected\n',  
+            fcst_probit[0,:] ,'\n',  
+            fcst_ens_1d, '\n', 
+            extra_args['min bound'], extra_args['max bound'],'\n'
+            'MEOW' )
+    
+    fcst_probit -= np.mean(fcst_probit)
+    fcst_probit /= np.std( fcst_probit, ddof=1)
+
+    # Step 3: Apply fast Gaussian resampling
+    virt_probit = ( np.matmul( fcst_probit, gauss_resamp_matrix ) )
+
+    # Step 4: Invert PPI transforms on virtual probits
+    virt_ens_1d = ( 
+        fitted_dist.ppf(
+            norm.cdf( virt_probit[0,:] )
+        )
+    )
+
+    # --- End of loop over variables
+
+    
+    return virt_ens_1d

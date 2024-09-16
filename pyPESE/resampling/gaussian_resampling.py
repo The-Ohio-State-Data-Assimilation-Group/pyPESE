@@ -21,7 +21,7 @@
 '''
 
 import numpy as np
-
+from numba import njit
 
 
 
@@ -132,6 +132,7 @@ def fast_unlocalized_gaussian_resampling( original_ens2d, ens_size_virtual, rng_
             Transformation matrix used to construct Gaussian resampling coefficients
         
 '''
+@njit
 def prep_transform_matrix_for_gaussian_coefficients( ens_size_original, ens_size_virtual ):
 
     # Rename variables to use a different notation.
@@ -144,7 +145,8 @@ def prep_transform_matrix_for_gaussian_coefficients( ens_size_original, ens_size
                 )
     C_E = np.eye(N)* M/(N-1.)
     C_E -= (k-1)**2/M
-    transform_matrix = np.matrix(np.linalg.cholesky( C_E ))
+    transform_matrix = np.linalg.cholesky( C_E )
+    # transform_matrix = np.matrix(np.linalg.cholesky( C_E ))
 
     return transform_matrix
 
