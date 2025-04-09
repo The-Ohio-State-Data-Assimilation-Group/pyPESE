@@ -113,4 +113,4 @@ for i in range(2):
 fig.subplots_adjust( hspace=0.4)
 
 
-plt.savefig('demo.png')
+plt.savefig('simple_demo.png')
