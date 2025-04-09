@@ -2,7 +2,7 @@
 
 This repository contains Python codes for PESE methods, and accompanies the following research journal manuscript
 
-> Chan, M-Y., Rubin, J., Satterfield, E. and Hyer, E. J.: A Dime a Hundred: Cost-Effective Large Weather Forecast Ensembles through Probit-space Ensemble Size Expansion for Gaussian Copulas (PESE-GC). _Submitting to the Journal of Advances in Modeling Earth Systems._
+> Chan, M-Y., Rubin J., Satterfield E. and Hyer E.: A Dime a Hundred: Cost-Effective Large Weather Forecast Ensembles through Probit-space Ensemble Size Expansion for Gaussian Copulas (PESE-GC). _Submitting to the Journal of Advances in Modeling Earth Systems._
 
 &nbsp; &nbsp; 
 
