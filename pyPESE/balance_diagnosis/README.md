@@ -6,6 +6,8 @@
 PESE-GC might generate virtual members with highly unbalanced states. 
 This directory contains functions to estimate balanced states. 
 
+UNDER DEVELOPMENT. THESE FUNCTIONS ARE NOT USED AT THE MOMENT.
+
 &nbsp; &nbsp;
 
 
