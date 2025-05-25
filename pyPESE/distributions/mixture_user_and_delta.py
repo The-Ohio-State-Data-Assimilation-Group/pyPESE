@@ -31,6 +31,7 @@ from numba.types import Tuple as nb_tuple
 
 
 
+
 '''
     Class defining the delta+user mixture distribution
 
@@ -136,7 +137,7 @@ class mixture_user_and_delta:
             ppf_output = mixed_user_delta_ppf( eval_cdf )
 
 
-
+# ------------ End of definition for mixture_and_user_delta distribution SciPy-like class
 
 
 
