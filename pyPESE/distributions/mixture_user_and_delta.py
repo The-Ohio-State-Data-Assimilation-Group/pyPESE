@@ -106,11 +106,10 @@ class mixture_user_and_delta:
 
         # Evaluate CDF of delta component (should component exist)
         if self.delta_dist_flag:
-            cdf_delta = np.searchsorted( 
-                self.delta_dist_vals, eval_pts, side='right'
-            ) / len(self.delta_dist_vals)
+            cdf_delta = delta_cdf( self.delta_dist_vals, eval_pts )
         else:
-            cdf_delta = 0.
+            cdf_delta = np.ones_like( eval_pts )
+        # --- End of delta distribution eval
 
         # Mix the two CDFs
         cdf_mix = ( 
@@ -134,5 +133,48 @@ class mixture_user_and_delta:
 
         # PPF calculation is not trivial for mixed distribution
         if self.delta_dist_flag:
-            ppf_output = self.mixed_user_delta_ppf( eval_cdf )
+            ppf_output = mixed_user_delta_ppf( eval_cdf )
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+    FUNCTION TO EVALUATE DELTA DISTRIBUTION CDF
+'''
+def delta_cdf( ):
+    return
+
+
+
+
+
+
+
+
+
+'''
+    FUNCTION TO EVALUATE PPF OF MIXED USER-DELTA DISTRIBUTINO
+'''
+def mixed_user_delta_ppf():
+    return
