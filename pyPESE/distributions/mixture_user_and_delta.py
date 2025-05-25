@@ -36,9 +36,10 @@ from numba.types import Tuple as nb_tuple
 
     Note: This function is initialized using other pyPESE distribution classes.
 '''
-class generic_delta_and_user_mixture: 
+class mixture_user_and_delta: 
 
     name = 'generic delta-user mixture distribution'
+
 
     # Initialize 
     # Note: dist_class must be a class, not an instance!!!
@@ -51,10 +52,10 @@ class generic_delta_and_user_mixture:
         # Error check: dist_class is an instance, not a class
         if isinstance( dist_class ):
             self.err_flag = True
-            self.err_msg += '\nERROR (pyPESE.distributions.generic_delta_and_user_mixture.__init__):\n'
-            self.err_msg += 'dist_class used to init generic_delta_and_user_mixture is an instance!\n'
+            self.err_msg += '\nERROR (pyPESE . distributions . mixture_user_and_delta . mixture_user_and_delta . __init__):\n'
+            self.err_msg += 'dist_class used to init mixture_user_and_delta is an instance!\n'
             self.err_msg += 'Name of the inputted dist_class instance: %s\n' % dist_class.name
-            return
+        # --- End of class checking
 
         # Sort ensemble values
         sorted_ens_vals = np.sort( ens_values1d )
@@ -65,8 +66,17 @@ class generic_delta_and_user_mixture:
         uniq_vals = vals[cnt == 1]
 
         # Detect degenerate values & their frequencies
-        self.degen_vals = vals[cnt > 1]
-        self.degen_weights = cnt[cnt>1] / ens_size 
+        degen_vals = vals[cnt > 1]
+        degen_freq = cnt[cnt>1]
+
+        # Generate delta distribution information
+        if len( uniq_vals ) < ens_size:
+            self.delta_dist_flag = True
+            self.delta_dist_vals = np.sort( np.repeat( vals[cnt>1], cnt[cnt>1] ) )
+            self.delta_dist_weight = len(self.degen_dist_vals) / ens_size 
+        else:
+            self.delta_dist_flag = False
+            self.delta_dist_weight = 0.
 
         # Fit user-specified distribution to unique values
         params = dist_class.fit( uniq_vals )
@@ -76,16 +86,53 @@ class generic_delta_and_user_mixture:
         self.user_dist_weight = len( uniq_vals ) / ens_size
 
         # Check: Do weights sum to unity?
-        checksum = np.sum( self.degen_weights ) + self.user_dist_weight
+        checksum = self.degen_weight + self.user_dist_weight
         if ( np.abs( checksum - 1) > 1e-6 ) :
             self.err_flag = True
-            self.err_msg += '\nERROR (pyPESE.distributions.generic_delta_and_user_mixture.__init__): \n'
+            self.err_msg += '\nERROR (pyPESE . distributions . mixture_user_and_delta . mixture_user_and_delta . __init__): \n'
             self.err_msg += 'Sum of weights (%f) is not unity!\n' % checksum
-            return
-
+        # --- End of weight sum check
 
         return
+    # --- End of definition for mixture_user_and_delta class
 
     
 
+    # Function to evaluate CDF of mixture_user_and_delta distribution
+    def cdf( self, eval_pts ):
+
+        # Evaluate CDF of user component
+        cdf_user = self.user_dist_instance.cdf( eval_pts )
+
+        # Evaluate CDF of delta component (should component exist)
+        if self.delta_dist_flag:
+            cdf_delta = np.searchsorted( 
+                self.delta_dist_vals, eval_pts, side='right'
+            ) / len(self.delta_dist_vals)
+        else:
+            cdf_delta = 0.
+
+        # Mix the two CDFs
+        cdf_mix = ( 
+            cdf_user * self.user_dist_weight 
+            + cdf_delta * self.delta_dist_weight
+        )
+
+        # Return the mixed CDF
+        return cdf_mix
+    # --- End of function to evaluate the CDF
+
+
+
+    # Public-facing function to evaluate inverse CDF (aka, percent point function)
+    def ppf( self, eval_cdf ):
+        
+        # PPF calculation is fast if delta component does not exist.
+        if not self.delta_dist_flag:
+            ppf_output = self.user_dist_instance.ppf( eval_cdf )
+        # --- End of calculation for pure user distribution
+
+        # PPF calculation is not trivial for mixed distribution
+        if self.delta_dist_flag:
+            ppf_output = self.mixed_user_delta_ppf( eval_cdf )
 
