@@ -42,31 +42,48 @@ class generic_delta_and_user_mixture:
 
     # Initialize 
     # Note: dist_class must be a class, not an instance!!!
-    def __init__( self, ens_values, dist_class ):
+    def __init__( self, ens_values1d, dist_class ):
 
         # Error-handling variables
-        err_flag = False
-        err_msg = ''
+        self.err_flag = False
+        self.err_msg = ''
 
         # Error check: dist_class is an instance, not a class
         if isinstance( dist_class ):
-            err_flag = True
-            err_msg = 'ERROR: dist_class used to init generic_delta_and_user_mixture is an instance!'
-            err_msg = '       '+string( dist_class )
-            return err_flag, err_msg
+            self.err_flag = True
+            self.err_msg += '\nERROR (pyPESE.distributions.generic_delta_and_user_mixture.__init__):\n'
+            self.err_msg += 'dist_class used to init generic_delta_and_user_mixture is an instance!\n'
+            self.err_msg += 'Name of the inputted dist_class instance: %s\n' % dist_class.name
+            return
 
         # Sort ensemble values
-        sorted_ens_vals = np.sort( ens_values )
+        sorted_ens_vals = np.sort( ens_values1d )
+        ens_size = len( sorted_ens_vals )
 
-        # Detect unique values
+        # Detect unique values 
         vals, cnt = np.unique( sorted_ens_vals, return_counts = True)
-        uniq_val = vals[cnt == 1]
-        degen_vals = vals[cnt > 1]
+        uniq_vals = vals[cnt == 1]
 
-        # Detect uniqu
+        # Detect degenerate values & their frequencies
+        self.degen_vals = vals[cnt > 1]
+        self.degen_weights = cnt[cnt>1] / ens_size 
 
-        self.cdf_locs = cdf_locs
-        self.cdf_vals = cdf_vals
+        # Fit user-specified distribution to unique values
+        params = dist_class.fit( uniq_vals )
+
+        # Store user-specified distribution instance
+        self.user_dist_instance = dist_class( *params )
+        self.user_dist_weight = len( uniq_vals ) / ens_size
+
+        # Check: Do weights sum to unity?
+        checksum = np.sum( self.degen_weights ) + self.user_dist_weight
+        if ( np.abs( checksum - 1) > 1e-6 ) :
+            self.err_flag = True
+            self.err_msg += '\nERROR (pyPESE.distributions.generic_delta_and_user_mixture.__init__): \n'
+            self.err_msg += 'Sum of weights (%f) is not unity!\n' % checksum
+            return
+
+
         return
 
     
