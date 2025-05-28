@@ -43,24 +43,25 @@ class mixture_user_and_delta:
 
 
     # Initialize 
-    # Note: dist_class must be a class, not an instance!!!
-    def __init__( self, ens_values1d, dist_class ):
+    # Note: user_dist_class must be a class, not an instance!!!
+    def __init__( self, ens_values1d, user_dist_class ):
 
         # Error-handling variables
         self.err_flag = False
         self.err_msg = ''
 
-        # Error check: dist_class is an instance, not a class
-        if isinstance( dist_class ):
+        # Error check: user_dist_class is an instance, not a class
+        if isinstance( user_dist_class ):
             self.err_flag = True
             self.err_msg += '\nERROR (pyPESE . distributions . mixture_user_and_delta . mixture_user_and_delta . __init__):\n'
-            self.err_msg += 'dist_class used to init mixture_user_and_delta is an instance!\n'
-            self.err_msg += 'Name of the inputted dist_class instance: %s\n' % dist_class.name
+            self.err_msg += 'user_dist_class used to init mixture_user_and_delta is an instance!\n'
+            self.err_msg += 'Name of the inputted user_dist_class instance: %s\n' % user_dist_class.name
         # --- End of class checking
 
         # Sort ensemble values
         sorted_ens_vals = np.sort( ens_values1d )
         ens_size = len( sorted_ens_vals )
+        self.ens_vals = sorted_ens_vals
 
         # Detect unique values 
         vals, cnt = np.unique( sorted_ens_vals, return_counts = True)
@@ -70,32 +71,54 @@ class mixture_user_and_delta:
         degen_vals = vals[cnt > 1]
         degen_freq = cnt[cnt>1]
 
-        # Generate delta distribution information
-        if len( uniq_vals ) < ens_size:
-            self.delta_dist_flag = True
-            self.delta_dist_vals = np.sort( np.repeat( vals[cnt>1], cnt[cnt>1] ) )
-            self.delta_dist_weight = len(self.degen_dist_vals) / ens_size 
-        else:
-            self.delta_dist_flag = False
-            self.delta_dist_weight = 0.
+        # -----------------------------------------------------------------
+        # Fit & init user-specified distribution
+        # -----------------------------------------------------------------
 
         # Fit user-specified distribution to unique values
-        params = dist_class.fit( uniq_vals )
+        params = user_dist_class.fit( uniq_vals )
 
         # Store user-specified distribution instance
-        self.user_dist_instance = dist_class( *params )
+        self.user_dist_instance = user_dist_class( *params )
         self.user_dist_weight = len( uniq_vals ) / ens_size
 
+
+        # -----------------------------------------------------------------
+        # Prepare delta distribution information
+        # -----------------------------------------------------------------
+        self.delta_dist_weight = ( ens_size - len( uniq_vals ) ) / ens_size 
+
+        # Only prep info if delta distribution is activate
+        if self.delta_dist_weight > 0:
+            self.delta_dist_vals = degen_vals
+            self.delta_dist_cnts = degen_freq
+
+            # Eval CDF at ensemble values
+            self.delta_dist_ens_cdf = np.zeros_like( sorted_ens_vals )
+            self.num_degen_vals = np.sum( degen_freq )
+            counter = 0
+            for imem in range( ens_size ):
+                # Increment CDF for degen values
+                if ( self.ens_vals[imem] in self.delta_dist_vals ):
+                    counter += 1
+                # Eval CDF
+                self.delta_dist_ens_cdf[imem] = counter/self.num_degen_vals
+            # --- End of CDF evaluation loop
+        # --- End of delta distribution information prep
+
+
         # Check: Do weights sum to unity?
-        checksum = self.degen_weight + self.user_dist_weight
+        checksum = self.delta_dist_weight + self.user_dist_weight
         if ( np.abs( checksum - 1) > 1e-6 ) :
             self.err_flag = True
             self.err_msg += '\nERROR (pyPESE . distributions . mixture_user_and_delta . mixture_user_and_delta . __init__): \n'
             self.err_msg += 'Sum of weights (%f) is not unity!\n' % checksum
         # --- End of weight sum check
 
+
         return
     # --- End of definition for mixture_user_and_delta class
+
 
     
 
@@ -107,7 +130,7 @@ class mixture_user_and_delta:
 
         # Evaluate CDF of delta component (should component exist)
         if self.delta_dist_flag:
-            cdf_delta = delta_cdf( self.delta_dist_vals, eval_pts )
+            cdf_delta = mud_delta_cdf( self, eval_pts )
         else:
             cdf_delta = np.ones_like( eval_pts )
         # --- End of delta distribution eval
@@ -127,14 +150,14 @@ class mixture_user_and_delta:
     # Public-facing function to evaluate inverse CDF (aka, percent point function)
     def ppf( self, eval_cdf ):
         
-        # PPF calculation is fast if delta component does not exist.
-        if not self.delta_dist_flag:
+        # PPF calculation is simple if delta component does not exist.
+        if self.delta_dist_weight == 0 :
             ppf_output = self.user_dist_instance.ppf( eval_cdf )
         # --- End of calculation for pure user distribution
 
         # PPF calculation is not trivial for mixed distribution
-        if self.delta_dist_flag:
-            ppf_output = mixed_user_delta_ppf( eval_cdf )
+        if self.delta_dist_weight > 0:
+            ppf_output = mud_ppf( eval_cdf )
 
 
 # ------------ End of definition for mixture_and_user_delta distribution SciPy-like class
@@ -161,10 +184,43 @@ class mixture_user_and_delta:
 
 
 '''
-    FUNCTION TO EVALUATE DELTA DISTRIBUTION CDF
+    FUNCTION TO EVALUATE DELTA DISTRIBUTION CDF OF MIXTURE USER AND DELTA DISTRIBUTION
+
+    Inputs:
+    1) mud_dist_inst -- Instance of the mixture user and delta distribution class
+    2) eval_pts -- 1D NumPy array containing locations at which to evaluate CDF
 '''
-def delta_cdf( ):
-    return
+def mud_delta_cdf( mud_dist_inst, eval_pts ):
+
+    # Is the eval points the same as the ensemble?
+    sorted_eval_pts = np.sort( eval_pts )
+
+    # Checking whether the ensemble values and eval values are the same
+    flag_ens_eval_same = False
+    if len( sorted_eval_pts ) == len(mud_dist_inst.ens_vals):
+        flag_ens_eval_same = (
+            int( np.sum( mud_dist_inst.ens_vals == sorted_eval_pts ) )
+            == len(mud_dist_inst.ens_vals)
+        )
+    # --- End of checking whether ensemble values and eval values are the same
+
+    # CDF for ensemble values
+    if flag_ens_eval_same:
+        sort_inds = np.argsort( eval_pts )
+        out_cdf = np.empty_like( eval_pts )
+        out_cdf[sort_inds] = mud_dist_inst.delta_dist_ens_cdf[:]
+    # --- End of CDF evaluation at ensemble values
+
+    # CDF for non-ensemble values
+    if not flag_ens_eval_same:
+        out_cdf = np.searchsorted( 
+            mud_dist_inst.ens_vals,
+            eval_pts, side = 'right'
+        )
+        out_cdf /= mud_dist_inst.num_degen_vals
+    # --- End of CDF evaluation for eval_pts that are not the ensemble.
+
+    return out_cdf
 
 
 
@@ -175,7 +231,65 @@ def delta_cdf( ):
 
 
 '''
-    FUNCTION TO EVALUATE PPF OF MIXED USER-DELTA DISTRIBUTINO
+    FUNCTION TO EVALUATE PPF OF MIXED USER-DELTA DISTRIBUTION
 '''
-def mixed_user_delta_ppf():
+def mixed_user_delta_ppf( mud_dist_inst, eval_cdf ):
+
+    # Determine CDF jumps at locations where the delta functions exist
+    cdf_jump_dict = {}
+    cdf_jump_dict['val'] = []
+    cdf_jump_dict['cdf st'] = []
+    cdf_jump_dict['cdf ed'] = []
+    delta_cdf_offset = 0.
+    for ival, val in enumerate(mud_dist_inst.delta_dist_vals):
+        cdf_st = (
+            mud_dist_inst.user_dist_instance.cdf(val) * mud_dist_inst.user_dist_weight
+            + delta_cdf_offset
+        )
+        cdf_ed = (
+            cdf_st + mud_dist_inst.delta_dist_cnts[ival] / len( mud_dist_inst.ens_vals)
+        )
+        delta_cdf_offset += cdf_ed - cdf_st
+        cdf_jump_dict['val'].append( deepcopy(val) )
+        cdf_jump_dict['cdf st'].append( deepcopy(cdf_st) )
+        cdf_jump_dict['cdf ed'].append( deepcopy(cdf_ed) )
+    # --- end of CDF jump determination.
+
+    # Numpy-rize the dictionary
+    cdf_jump_dict['val']        = np.array( cdf_jump_dict['val'] )
+    cdf_jump_dict['cdf span']   = np.array( cdf_jump_dict['cdf span'] )
+
+    # Output values
+    out_vals = np.empty_like( eval_cdf )
+
+    # Evaluate PPF!
+    for icdf, cdf in enumerate(eval_cdf):
+
+        # is CDF within one of the delta ranges?
+        flag_continuum = True
+        for ispan in range( len(cdf_jump_dict['val']) ):
+
+            # Is cdf value within this delta range?
+            if ( cdf_jump_dict['cdf st'][ispan] < cdf 
+                    and cdf <= cdf_jump_dict['cdf ed'][ispan] ):
+                flag_continuum = False
+                out_vals[icdf] = cdf_jump_dict['val'][ispan]
+
+                # no point in searching further
+                break
+            # --- End of comparing cdf against a cdf span
+        # --- end of loop over all cdf spans
+    
+        # If CDF is not within continuum range, move onto next CDF value
+        if not flag_continuum:
+            continue
+
+        # Calculation to handle CDF within continuum ranges
+        
+        
+
+            
+
+
+
     return
