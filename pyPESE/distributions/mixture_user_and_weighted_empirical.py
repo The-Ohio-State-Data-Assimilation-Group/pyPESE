@@ -228,7 +228,46 @@ def muwe_cdf( delta_pts, delta_weights, user_dist, user_weight, eval_pts ):
     return out_cdf
 
 
-# Sanity check for muwe CDF function
+# Sanity check for MUWE CDF function
+def muwe_cdf_SANITY_CHECK():
+
+    import matplotlib.pyplot as plt
+    from scipy.stats import norm
+
+    # Setting up weighted emipirical distribution
+    delta_pts = np.arange(3) -1.
+    delta_weights = np.array((0.25,0.5, 0.25), dtype='f8') * 0.5
+    
+    # Setting up user distribution
+    user_dist = norm(0,1)
+    user_weight = 0.5
+
+    # Setting up evaluation locations
+    eval_locs = np.zeros(20)
+    eval_locs[:12] = np.linspace(-0.5,2.5, 12 )
+    eval_locs[12:] = [-1,-1,0,0,0,0,1,1]
+    eval_locs = np.sort(eval_locs)
+
+    # Evaluate on dense locations
+    dense_eval_locs = np.linspace( -3,3, 1001 )
+
+
+    # Evaluate and plot CDF!
+    cdf = muwe_cdf(delta_pts, delta_weights, user_dist, user_weight, eval_locs)
+    cdf_dense = muwe_cdf(delta_pts, delta_weights, user_dist, user_weight, dense_eval_locs)
+    plt.plot( dense_eval_locs, cdf_dense, '-r', label='Dense CDF evaluation', zorder=0)
+    plt.scatter(eval_locs, cdf, s=30, label='Sparse CDF evaluation')
+    plt.scatter( 
+        delta_pts, np.cumsum( delta_weights) + norm.cdf(delta_pts)*user_weight, s = 30, 
+        marker='x', c='r', label='True CDF at delta locations')
+
+    plt.legend()
+    plt.title('Sanity Checking muwe_cdf')
+    plt.savefig('SANITY_CHECK_muwe_cdf.png')
+    plt.close()
+
+    return
+    
 
 
 
@@ -339,7 +378,9 @@ def weighted_empirical_cdf_SANITY_CHECK():
     plt.legend()
     plt.title('Sanity Checking weighted_empirical_cdf')
     plt.savefig('SANITY_CHECK_weighted_empirical_cdf.png')
+    plt.close()
     
+    return
 
 
 
@@ -360,3 +401,4 @@ def weighted_empirical_cdf_SANITY_CHECK():
 '''
 if __name__ == '__main__':
     weighted_empirical_cdf_SANITY_CHECK()
+    muwe_cdf_SANITY_CHECK()
