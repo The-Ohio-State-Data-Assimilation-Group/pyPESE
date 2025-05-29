@@ -1,18 +1,32 @@
 '''
-    MIXTURE DIRAC DELTA DISTRIBUTION
+    MIXTURE USER + WEIGHTED EMPIRICAL DISTRIBUTION (MUWE DISTRIBUTIOON)
     =================================================================================
     In an ensemble of simulations, there can sometimes be repeated (i.e.) degenerate values.
     For example, multiple WRF members' QCLOUD value at the same location can be zero. These
     degenerate values interfere with probit transforms. We will treat degenerate values as 
     being drawn from a dirac-delta distribution, and the non-degenerate values as being drawn
     from another distribution. In other words, we use a mixture of two distributions when 
-    there are degenerate values: (1) delta distributions, and (2) the user-specified distribution. 
-    This mixture distribution is defined below
-
+    there are degenerate values: (1) the user-specified distribution, and (2) weighted 
+    empirical distribution. This mixture distribution's pdf is 
     \begin{equation}
-        p(x) = (1/N) * { \sum^{N_d}_{j=1} (delta(x-x_j)) }
-                + ( 1 - N_d/N ) * {p_user(x)}
+        p_{\text{muwe}}(x) := \sum^{N_d}_{j=1} w_j * delta(x-x_j)
+                                + ( w_{\text{user}} ) * {p_{\text{user}}(x)}
     \end{equation}
+
+    where $N_d$ is number of unique degenerate ensemble values, $x_j$ refers to those unique degenerate
+    values, $w_j$ is the weight assigned to each degenerate value
+    \begin{equation}
+        w_j := (number of members with value x_j) / (ensemble size),
+    \end{equation}
+    $w_{\text{user}}$ is the weight assigned to the user distribution
+    \begin{equation}
+        w_{\text{user}} := (number of non degenerate members) / (ensemble size),
+    \end{equation}
+    and ${p_{\text{user}}(x)}$ is the pdf of the user-specified distribution. Note that
+    \begin{equation}
+        w_{\text{user}} + \sum^{N_d}_{j=1} w_j = 1
+    \end{equation}
+    and all weights are positive semidefinite.
 
     When there are no degenerate values, the mixture distribution turns into the user-specified 
     distribution. As such, the delta+user mixture distribution should be used by default in PESE-GC.
@@ -381,6 +395,51 @@ def weighted_empirical_cdf_SANITY_CHECK():
     plt.close()
     
     return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+    FUNCTION TO COMPUTE PPF OF MUWE DISTRIBUTION
+'''
+
+
+
+
+
+
+
+
+
+
+
 
 
 
