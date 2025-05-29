@@ -224,7 +224,7 @@ from copy import deepcopy
 
 
 '''
-    FUNCTION TO EVALUATE CDF OF MULTI-DELTA DISTRIBUTION
+    FUNCTION TO EVALUATE CDF OF WEIGHTED EMPIRICAL DISTRIBUTION
 
     Inputs:
     1) delta_pts                -- Sorted UNIQUE locations of delta functions (1D NumPy array)
@@ -238,18 +238,18 @@ from copy import deepcopy
           evaluation points that lie on the same delta point
         ~ assumes that repeated eval points lie on a delta point
 '''
-def multi_delta_cdf( delta_pts, delta_weights_normalized, eval_pts ):
+def weighted_empirical_cdf( delta_pts, delta_weights_normalized, eval_pts ):
 
     # Init output array
     out_cdf = np.empty_like( eval_pts)
 
     # Detect delta points that coincide with eval points
-    vals, cnts = np.unique( eval_pts, return_count=True)
+    vals, cnts = np.unique( eval_pts, return_counts=True)
     flag_delta = np.isin( delta_pts, vals )
     delta_cnts = np.zeros_like( delta_pts )
     for ipt, pt in enumerate(delta_pts):
         if flag_delta[ipt]:
-            ind = np.where( vals == pt )[0,0]
+            ind = np.where( vals == pt )[0][0]
             delta_cnts[ipt] = cnts[ind]
     # --- End of detection
     
@@ -262,19 +262,19 @@ def multi_delta_cdf( delta_pts, delta_weights_normalized, eval_pts ):
         flag_right = pt > delta_pts
 
         # Evaluate CDF based on delta points to the left of pt
-        out_cdf[ipt] = np.sum( delta_weights_normalized )
+        out_cdf[ipt] = np.sum( delta_weights_normalized[flag_right] )
 
         # Special handling if point lies on delta function
         if pt in delta_pts:
             
             # Index corresponding to delta_cnts
-            ind = np.where( delta_pts == pt )
+            ind = np.where( delta_pts == pt )[0][0]
 
             # Increment CDF if eval point lies on delta point
             delta_counter[ind] += 1
             out_cdf[ipt] += (
-                delta_weights_normalized
-                * (delta_counter[ind] / delta_cnts[ipt])
+                delta_weights_normalized[ind]
+                * (delta_counter[ind] / delta_cnts[ind])
             )
         # --- End of special treatment
     # --- End of loop over all eval points
@@ -282,4 +282,52 @@ def multi_delta_cdf( delta_pts, delta_weights_normalized, eval_pts ):
     return out_cdf
 
 
+# Sanity checker
+def weighted_empirical_cdf_SANITY_CHECK():
 
+    import matplotlib.pyplot as plt
+
+    # Setting up weighted distribution
+    delta_pts = np.arange(3)*1.
+    delta_weights_normalized = np.array((0.25,0.5, 0.25), dtype='f8')
+
+    # Setting up evaluation locations
+    eval_locs = np.zeros(20)
+    eval_locs[:14] = np.linspace(-0.5,2.5, 14 )
+    eval_locs[14:] = [0,0,1,1,1,2]
+    eval_locs = np.sort(eval_locs)
+
+    # Evaluate on dense locations
+    dense_eval_locs = np.linspace( -0.7, 2.7, 1001 )
+
+
+    # Evaluate and plot CDF!
+    cdf = weighted_empirical_cdf(delta_pts, delta_weights_normalized, eval_locs)
+    cdf_dense = weighted_empirical_cdf(delta_pts, delta_weights_normalized, dense_eval_locs)
+    plt.plot( dense_eval_locs, cdf_dense, '-r', label='Dense CDF evaluation', zorder=0)
+    plt.scatter(eval_locs, cdf, s=30, label='Sparse CDF evaluation')
+    plt.scatter( delta_pts, np.cumsum( delta_weights_normalized), s = 30, marker='x', c='r', label='True CDF at delta locations')
+    plt.legend()
+    plt.title('Sanity Checking weighted_empirical_cdf')
+    plt.savefig('SANITY_CHECK_weighted_empirical_cdf.png')
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+    SANITY CHECKS
+'''
+if __name__ == '__main__':
+    weighted_empirical_cdf_SANITY_CHECK()
