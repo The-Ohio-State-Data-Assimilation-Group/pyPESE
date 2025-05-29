@@ -461,7 +461,7 @@ def weighted_empirical_cdf_SANITY_CHECK():
     5) eval_pctls       -- 1D NumPy array containing quantiles at which to evaluate 
                            quantile function
 '''
-def muwe_ppf_SLOW( delta_pts, delta_weights, user_dist, user_weight, eval_pctls ):
+def muwe_ppf( delta_pts, delta_weights, user_dist, user_weight, eval_pctls ):
 
     # Evaluate CDF upper and lower bounds corresponding to delta points
     user_cdf_at_delta_pts = user_dist.cdf( delta_pts ) * user_weight
