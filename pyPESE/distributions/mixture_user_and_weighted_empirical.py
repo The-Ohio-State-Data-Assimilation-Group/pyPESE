@@ -334,7 +334,7 @@ def weighted_empirical_cdf( delta_pts, delta_weights_normalized, eval_pts ):
     # --- End of detection
     
     # Calculate CDF using an eager compilation of the calculation loop
-    out_cdf = weighted_empirical_cdf_loop_accel( delta_pts, delta_weights_normalized, eval_pts, delta_cnts )
+    out_cdf = weighted_empirical_cdf_loop_njit_accel( delta_pts, delta_weights_normalized, eval_pts, delta_cnts )
     
     return out_cdf
 
@@ -342,7 +342,7 @@ def weighted_empirical_cdf( delta_pts, delta_weights_normalized, eval_pts ):
 
 # Accelerating loop used in weighted_empirical_cdf_evaluator
 @njit( nb_f64[:]( nb_f64[:], nb_f64[:], nb_f64[:], nb_f64[:] ) )
-def weighted_empirical_cdf_loop_accel( delta_pts, delta_weights_normalized, eval_pts, delta_cnts ):
+def weighted_empirical_cdf_loop_njit_accel( delta_pts, delta_weights_normalized, eval_pts, delta_cnts ):
 
     # Init useful counter
     delta_counter = np.zeros_like( delta_cnts )
@@ -461,10 +461,7 @@ def weighted_empirical_cdf_SANITY_CHECK():
     5) eval_pctls       -- 1D NumPy array containing quantiles at which to evaluate 
                            quantile function
 '''
-def muwe_ppf( delta_pts, delta_weights, user_dist, user_weight, eval_pctls ):
-
-    # Init array to hold output values
-    out_vals = np.zeros_like(eval_pctls)
+def muwe_ppf_SLOW( delta_pts, delta_weights, user_dist, user_weight, eval_pctls ):
 
     # Evaluate CDF upper and lower bounds corresponding to delta points
     user_cdf_at_delta_pts = user_dist.cdf( delta_pts ) * user_weight
@@ -472,7 +469,10 @@ def muwe_ppf( delta_pts, delta_weights, user_dist, user_weight, eval_pctls ):
     delta_cdf_upper = user_cdf_at_delta_pts + delta_upper_sum
     delta_cdf_lower = user_cdf_at_delta_pts
     delta_cdf_lower[1:] += delta_upper_sum[:-1]
-    
+
+    # Init array to hold output values
+    out_vals = np.zeros_like( eval_pctls )
+
     # Loop over every evaluation quantile   
     for ipctl, pctl in enumerate( eval_pctls ):
 
@@ -500,6 +500,7 @@ def muwe_ppf( delta_pts, delta_weights, user_dist, user_weight, eval_pctls ):
     # --- End of loop over quantiles
 
     return out_vals
+        
         
 
 # Sanity checking muwe ppf
