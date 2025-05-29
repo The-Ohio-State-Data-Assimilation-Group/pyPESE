@@ -183,42 +183,37 @@ class mixture_user_and_delta:
 
 
 
+
+
+
+
+
 '''
-    FUNCTION TO EVALUATE DELTA DISTRIBUTION CDF OF MIXTURE USER AND DELTA DISTRIBUTION
+    FUNCTION TO EVALUATE CDF OF MIXTURE USER AND DELTA DISTRIBUTION
 
     Inputs:
-    1) mud_dist_inst -- Instance of the mixture user and delta distribution class
-    2) eval_pts -- 1D NumPy array containing locations at which to evaluate CDF
+    1) delta_pts        -- Locations of delta functions (a sorted 1D NumPy array)
+    2) delta_weights    -- Weights assigned to each delta function (1D NumPy array)
+    3) user_dist        -- Fitted user-specified SciPy-like distribution instance
+    4) user_weight      -- Weight assigned to the user distribution
+    5) eval_pts         -- 1D NumPy array containing locations at which to evaluate CDF
+
+    NOTE: sum of delta_weights and user_weight must be unity!
 '''
-def mud_delta_cdf( mud_dist_inst, eval_pts ):
+def mud_delta_cdf( delta_pts, delta_weights, user_dist, user_weight, eval_pts ):
 
-    # Is the eval points the same as the ensemble?
-    sorted_eval_pts = np.sort( eval_pts )
 
-    # Checking whether the ensemble values and eval values are the same
-    flag_ens_eval_same = False
-    if len( sorted_eval_pts ) == len(mud_dist_inst.ens_vals):
-        flag_ens_eval_same = (
-            int( np.sum( mud_dist_inst.ens_vals == sorted_eval_pts ) )
-            == len(mud_dist_inst.ens_vals)
-        )
-    # --- End of checking whether ensemble values and eval values are the same
+    # Delta distribution CDF contribution
+    if len( delta_pts ) > 0:
 
-    # CDF for ensemble values
-    if flag_ens_eval_same:
-        sort_inds = np.argsort( eval_pts )
-        out_cdf = np.empty_like( eval_pts )
-        out_cdf[sort_inds] = mud_dist_inst.delta_dist_ens_cdf[:]
-    # --- End of CDF evaluation at ensemble values
+        # Separating 
 
-    # CDF for non-ensemble values
-    if not flag_ens_eval_same:
-        out_cdf = np.searchsorted( 
-            mud_dist_inst.ens_vals,
-            eval_pts, side = 'right'
-        )
-        out_cdf /= mud_dist_inst.num_degen_vals
-    # --- End of CDF evaluation for eval_pts that are not the ensemble.
+        delta_cdf = np.searchsorted( eval_pts, delta_weights)
+
+
+
+    
+
 
     return out_cdf
 
@@ -228,68 +223,99 @@ def mud_delta_cdf( mud_dist_inst, eval_pts ):
 
 
 
-
-
 '''
-    FUNCTION TO EVALUATE PPF OF MIXED USER-DELTA DISTRIBUTION
+    FUNCTION TO EVALUATE CDF OF MULTI-DELTA DISTRIBUTION
+
+    Inputs:
+    1) delta_pts                -- Sorted locations of delta functions (1D NumPy array)
+    2) delta_weights_normalized -- Weights assigned to each delta function (1D NumPy array)
+    3) eval_pts                 -- 1D NumPy array containing locations at which to evaluate CDF
+
+    NOTES: 
+        ~ delta_pts must be sorted, and delta_weights corresponds to each delta point
+        ~ sum of delta_weights should be less than or equal to unity
+        ~ borrowed ideas from Jeffrey Anderson to counteract issue of having multiple 
+          evaluation points that lie on the same delta point
 '''
-def mixed_user_delta_ppf( mud_dist_inst, eval_cdf ):
+def multi_delta_cdf( delta_pts, delta_weights_normalized, eval_pts ):
 
-    # Determine CDF jumps at locations where the delta functions exist
-    cdf_jump_dict = {}
-    cdf_jump_dict['val'] = []
-    cdf_jump_dict['cdf st'] = []
-    cdf_jump_dict['cdf ed'] = []
-    delta_cdf_offset = 0.
-    for ival, val in enumerate(mud_dist_inst.delta_dist_vals):
-        cdf_st = (
-            mud_dist_inst.user_dist_instance.cdf(val) * mud_dist_inst.user_dist_weight
-            + delta_cdf_offset
-        )
-        cdf_ed = (
-            cdf_st + mud_dist_inst.delta_dist_cnts[ival] / len( mud_dist_inst.ens_vals)
-        )
-        delta_cdf_offset += cdf_ed - cdf_st
-        cdf_jump_dict['val'].append( deepcopy(val) )
-        cdf_jump_dict['cdf st'].append( deepcopy(cdf_st) )
-        cdf_jump_dict['cdf ed'].append( deepcopy(cdf_ed) )
-    # --- end of CDF jump determination.
+    # Init output array
+    out_cdf = np.empty_like( eval_pts)
 
-    # Numpy-rize the dictionary
-    cdf_jump_dict['val']        = np.array( cdf_jump_dict['val'] )
-    cdf_jump_dict['cdf span']   = np.array( cdf_jump_dict['cdf span'] )
+    # Detecting repeated eval pts -- such pts need to be handled differently
+    # from other (i.e., singular) eval pts
+    uniq_pts, cnt = np.unique( eval_pts, return_counts = True )
+    eval_pts_repeat = uniq_pts[cnt > 1]
 
-    # Output values
-    out_vals = np.empty_like( eval_cdf )
+    # Sum of all 
 
-    # Evaluate PPF!
-    for icdf, cdf in enumerate(eval_cdf):
-
-        # is CDF within one of the delta ranges?
-        flag_continuum = True
-        for ispan in range( len(cdf_jump_dict['val']) ):
-
-            # Is cdf value within this delta range?
-            if ( cdf_jump_dict['cdf st'][ispan] < cdf 
-                    and cdf <= cdf_jump_dict['cdf ed'][ispan] ):
-                flag_continuum = False
-                out_vals[icdf] = cdf_jump_dict['val'][ispan]
-
-                # no point in searching further
-                break
-            # --- End of comparing cdf against a cdf span
-        # --- end of loop over all cdf spans
-    
-        # If CDF is not within continuum range, move onto next CDF value
-        if not flag_continuum:
-            continue
-
-        # Calculation to handle CDF within continuum ranges
+    # Looping over every evaluation point
+    eval_pts_cnt = np.zeros_like( eval_pts_repeat )
+    for ipt, pt in enumerate( eval_pts ):
         
-        
-
+        # CDF calculation for unique eval points
+        if pt not in eval_pts_repeat:
             
 
 
 
-    return
+
+
+
+
+
+
+
+
+    # Eval pts that only occurs once (uniq) must be treated separately from other eval pts
+    # Note: np.isin means numpy . is in --- the resulting boolean array is True for eval_pts
+    #       that are within delta_pts
+    vals, eval_pts_cnt = np.unique( eval_pts, return_counts = True)
+    uniq_vals = vals[eval_pts_cnt==1]
+    eval_flag_uniq = np.isin( eval_pts, uniq_vals )
+    eval_pts_uniq = eval_pts[eval_flag_uniq]
+
+
+    # Evaluate CDF for unique locations
+    # ---------------------------------
+    # --- ChatGPT suggestion start
+    cdf_steps = np.cumsum( delta_weights_normalized )
+    cdf_inds_uniq = np.searchsorted( eval_pts_uniq, delta_pts, side='right')
+    cdf_vals_uniq = cdf_steps[cdf_inds_uniq - 1 ]
+    cdf_vals_uniq[ cdf_inds_uniq ==0] = 0.
+    # --- ChatGPT suggestion end
+    out_cdf[eval_flag_uniq] = cdf_vals_uniq
+
+
+    # Evaluate CDF for degenerate locations
+    # -------------------------------------
+    # Isolating degen eval values
+    eval_flag_degen = np.invert( eval_flag_uniq )
+    eval_pts_degen = eval_pts[eval_flag_degen]
+
+    # Useful counter for degenerate CDF evals
+    degen_cnter = np.zeros_like( eval_pts_cnt )
+
+    # Looped search to evaluate 
+    # Init array to hold CDF values
+    cdf_vals_degen = np.empty_like( eval_pts_degen )
+    dege
+    
+    
+
+    # Evaluate CDF at degenerate locations
+
+    cdf_vals_degen = np.empty_like( eval_pts_degen )
+    
+    # Treatment for unique degenerate eval locations
+    vals, cnt = np.unique( cdf_vals_degen, return_counts = True)
+    eval_pts_uniq_degen = vals[cnt == 1]
+    
+
+    
+
+    
+
+    
+
+    return out_cdf
