@@ -332,10 +332,11 @@ def weighted_empirical_cdf( delta_pts, delta_weights_normalized, eval_pts ):
             delta_cnts[ipt] = cnts[ind]
     # --- End of detection
     
-    # Calculate CDF using an accelerated loop
+    # Calculate CDF using an eager compilation of the calculation loop
     out_cdf = weighted_empirical_cdf_loop_accel( delta_pts, delta_weights_normalized, eval_pts, delta_cnts )
     
     return out_cdf
+
 
 
 # Accelerating loop used in weighted_empirical_cdf_evaluator
@@ -444,6 +445,66 @@ def weighted_empirical_cdf_SANITY_CHECK():
 
 
 
+'''
+    FUNCTION TO EVALUATE QUANTILE FUNCTION* OF MUWE DISTRIBUTION
+
+    *Also known as percent-point function (PPF) and inverse CDF
+
+    Inputs:
+    1) delta_pts        -- Locations of delta functions (a sorted 1D NumPy array)
+    2) delta_weights    -- Weights assigned to each delta function (1D NumPy array)
+    3) user_dist        -- Fitted user-specified SciPy-like distribution instance
+    4) user_weight      -- Scalar weight assigned to the user distribution
+    5) eval_pctls       -- 1D NumPy array containing quantiles at which to evaluate 
+                           quantile function
+'''
+def muwe_ppf( delta_pts, delta_weights, user_dist, user_weight, eval_pctls ):
+
+    # Init array to hold output values
+    out_vals = np.zeros_like(eval_pctls)
+
+    # Evaluate CDF upper and lower bounds corresponding to delta points
+    user_cdf_at_delta_pts = user_dist.cdf( delta_pts ) * user_weight
+    delta_upper_sum = np.cumsum( delta_weights )
+    delta_cdf_upper = user_cdf_at_delta_pts + delta_upper_sum
+    delta_cdf_lower = user_cdf_at_delta_pts
+    delta_cdf_lower[1:] += delta_upper_sum
+    
+    # Loop over every evaluation quantile   
+    for ipctl, pctl in enumerate( eval_pctls ):
+
+        # Treatment for quantiles that lie within zone of delta jumps
+        mask = ( delta_cdf_lower <= pctl ) & ( pctl <= delta_cdf_upper )
+        flag_within_delta_jumps = np.sum(mask) > 1
+        if flag_within_delta_jumps:
+            ind = np.where(mask)[0][0]
+            out_vals[ipctl] = delta_pts[ind]
+        # -- End of treatment for quantiles that lie within delta jumps
+
+        # Treatment for values outside of delta jumps
+        if not flag_within_delta_jumps:
+            # Determine contribution of weighted empirical CDF to this 
+            # quantile value
+            flag_larger_than_delta_upper = (pctl > delta_cdf_upper)
+            pctl_delta_contribution = np.sum( delta_weights[flag_larger_than_delta_upper] )
+
+            # Map percentile to normalized user distribution
+            pctl_user_contribution = (pctl - pctl_delta_contribution)/user_weight
+
+            # Invert user distribution
+            out_vals[ipctl] = user_dist.ppf( pctl_user_contribution)
+        # --- End of treatment for values outside of delta jumps
+    # --- End of loop over quantiles
+
+    return out_vals
+        
+
+        
+
+    
+
+
+    return
 
 
 
