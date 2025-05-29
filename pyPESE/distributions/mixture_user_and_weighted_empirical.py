@@ -195,27 +195,56 @@ from copy import deepcopy
     1) delta_pts        -- Locations of delta functions (a sorted 1D NumPy array)
     2) delta_weights    -- Weights assigned to each delta function (1D NumPy array)
     3) user_dist        -- Fitted user-specified SciPy-like distribution instance
-    4) user_weight      -- Weight assigned to the user distribution
+    4) user_weight      -- Scalar weight assigned to the user distribution
     5) eval_pts         -- 1D NumPy array containing locations at which to evaluate CDF
 
     NOTE: sum of delta_weights and user_weight must be unity!
 '''
-def mud_delta_cdf( delta_pts, delta_weights, user_dist, user_weight, eval_pts ):
+def muwe_cdf( delta_pts, delta_weights, user_dist, user_weight, eval_pts ):
 
+    out_cdf = np.zeros_like(eval_pts)
+
+    # Evaluate contribution of user distribution to MUWE CDF
+    if user_weight > 0:
+        out_cdf += user_dist.cdf( eval_pts ) * user_weight
+    # --- End of user distribution contribution
 
     # Delta distribution CDF contribution
-    if len( delta_pts ) > 0:
+    if np.sum(delta_weights) > 0:
 
-        # Separating 
+        # Normalizing weights
+        delta_weights_normalized = delta_weights / np.sum(delta_weights)
 
-        delta_cdf = np.searchsorted( eval_pts, delta_weights)
+        # Evaluate weighted empirical CDF
+        delta_cdf = weighted_empirical_cdf( 
+            delta_pts, delta_weights_normalized, eval_pts
+        ) 
 
+        # Contribute to output CDF
+        out_cdf += delta_cdf * (1.-user_weight)
 
-
-    
-
+    # --- End of delta distribution contribution
 
     return out_cdf
+
+
+# Sanity check for muwe CDF function
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
