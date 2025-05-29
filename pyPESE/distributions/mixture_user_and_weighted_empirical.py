@@ -560,6 +560,136 @@ def muwe_ppf_SANITY_CHECK():
 
 
 
+
+'''
+    ACCELERATED FUNCTION TO EVALUATE QUANTILE FUNCTION* OF MUWE DISTRIBUTION
+
+    *Also known as percent-point function (PPF) and inverse CDF
+
+    Inputs:
+    1) delta_pts        -- Locations of delta functions (a sorted 1D NumPy array)
+    2) delta_weights    -- Weights assigned to each delta function (1D NumPy array)
+    3) user_dist        -- Fitted user-specified SciPy-like distribution instance
+    4) user_weight      -- Scalar weight assigned to the user distribution
+    5) eval_pctls       -- 1D NumPy array containing quantiles at which to evaluate 
+                           quantile function
+''' 
+def muwe_ppf_fast( delta_pts, delta_weights, user_dist, user_weight, eval_pctls ):
+
+    # Evaluate CDF upper and lower bounds corresponding to delta points
+    user_cdf_at_delta_pts = user_dist.cdf( delta_pts ) * user_weight
+    delta_upper_sum = np.cumsum( delta_weights )
+    delta_cdf_upper = user_cdf_at_delta_pts + delta_upper_sum
+    delta_cdf_lower = user_cdf_at_delta_pts
+    delta_cdf_lower[1:] += delta_upper_sum[:-1]
+
+    # Apply JIT-accelerated loop calculation
+    user_weight_f64 = np.float64(user_weight)
+    out2d = muwe_ppf_fast_loop_njit_accel( 
+        delta_pts, delta_weights, user_weight_f64, eval_pctls, delta_cdf_lower, delta_cdf_upper
+        )
+
+    # Parsing outcome of the JIT-accelerated loop calculations
+    out_vals = out2d[:,0]
+    flag_user_ppf_eval = np.isnan(out_vals)
+    out_vals[flag_user_ppf_eval] = user_dist.ppf(out2d[:,1][flag_user_ppf_eval])
+    
+    return out_vals
+
+
+
+
+# Accelerated loop calculation
+@njit(  nb_f64[:,:]( nb_f64[:], nb_f64[:], nb_f64, nb_f64[:], nb_f64[:], nb_f64[:] ) )
+def muwe_ppf_fast_loop_njit_accel( delta_pts, delta_weights, user_weight, eval_pctls, delta_cdf_lower, delta_cdf_upper ):
+
+    # Init 2D array to hold output values
+    # Column 0: PPF'ed values for quantiles within delta jump zone
+    # Column 1: transformed quantile that can be used for user distribution ppf
+    out_arr2d = np.zeros( (len(eval_pctls), 2) ) + np.nan
+    
+    # Loop over every evaluation quantile   
+    for ipctl, pctl in enumerate( eval_pctls ):
+
+        # Treatment for quantiles that lie within zone of delta jumps
+        mask = ( delta_cdf_lower <= pctl ) * ( pctl <= delta_cdf_upper )
+        flag_within_delta_jumps = np.sum(mask) > 0
+        if flag_within_delta_jumps:
+            ind = np.where(mask)[0][0]
+            out_arr2d[ipctl,0] = delta_pts[ind]
+        # -- End of treatment for quantiles that lie within delta jumps
+
+        # Treatment for values outside of delta jumps
+        if not flag_within_delta_jumps:
+            # Determine contribution of weighted empirical CDF to this 
+            # quantile value
+            flag_larger_than_delta_upper = (pctl > delta_cdf_upper)
+            pctl_delta_contribution = np.sum( delta_weights[flag_larger_than_delta_upper] )
+
+            # Map percentile to normalized user distribution
+            out_arr2d[ipctl,1] = (pctl - pctl_delta_contribution)/user_weight
+
+        # --- End of treatment for values outside of delta jumps
+    # --- End of loop over quantiles
+
+    return out_arr2d
+
+
+# Sanity checking fast muwe ppf
+def muwe_ppf_fast_SANITY_CHECK():
+
+    import matplotlib.pyplot as plt
+    from scipy.stats import norm
+
+    # Setting up weighted emipirical distribution
+    delta_pts = np.arange(3) -1.
+    delta_weights = np.array((0.25,0.5, 0.25), dtype='f8') * 0.5
+    
+    # Setting up user distribution
+    user_dist = norm(0,1)
+    user_weight = 0.5
+
+    # Evaluate CDF on dense locations
+    dense_eval_locs = np.linspace( -3,3, 1001 )
+
+    # Test evaluations of muwe ppf
+    pctl_vals = np.arange(10)/10. + 0.05
+    ppf_vals = muwe_ppf_fast( delta_pts, delta_weights, user_dist, user_weight, pctl_vals )
+
+    # Evaluate MUWE CDF densely!
+    cdf_dense = muwe_cdf(delta_pts, delta_weights, user_dist, user_weight, dense_eval_locs)
+
+    # Plot CDF and ppf outcomes
+    plt.plot( cdf_dense, dense_eval_locs, '-r', label='Theoretical PPF', zorder=0)
+    plt.scatter( pctl_vals,ppf_vals, s=30, label='MUWE Fast PPFs')
+    plt.xlabel('CDF')
+    plt.ylabel('x')
+
+    plt.legend()
+    plt.title('Sanity Checking muwe_ppf_fast')
+    plt.savefig('SANITY_CHECK_muwe_ppf_fast.png')
+    plt.close()
+
+    return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 '''
     SANITY CHECKS
 '''
@@ -567,3 +697,4 @@ if __name__ == '__main__':
     weighted_empirical_cdf_SANITY_CHECK()
     muwe_cdf_SANITY_CHECK()
     muwe_ppf_SANITY_CHECK()
+    muwe_ppf_fast_SANITY_CHECK()
