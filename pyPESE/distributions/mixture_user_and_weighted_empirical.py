@@ -274,7 +274,8 @@ def muwe_cdf_SANITY_CHECK():
     plt.scatter( 
         delta_pts, np.cumsum( delta_weights) + norm.cdf(delta_pts)*user_weight, s = 30, 
         marker='x', c='r', label='True CDF at delta locations')
-
+    plt.ylabel('CDF')
+    plt.xlabel('x')
     plt.legend()
     plt.title('Sanity Checking muwe_cdf')
     plt.savefig('SANITY_CHECK_muwe_cdf.png')
@@ -403,6 +404,8 @@ def weighted_empirical_cdf_SANITY_CHECK():
     plt.scatter(eval_locs, cdf, s=30, label='Sparse CDF evaluation')
     plt.scatter( delta_pts, np.cumsum( delta_weights_normalized), s = 30, marker='x', c='r', label='True CDF at delta locations')
     plt.legend()
+    plt.ylabel('CDF')
+    plt.xlabel('x')
     plt.title('Sanity Checking weighted_empirical_cdf')
     plt.savefig('SANITY_CHECK_weighted_empirical_cdf.png')
     plt.close()
@@ -468,14 +471,14 @@ def muwe_ppf( delta_pts, delta_weights, user_dist, user_weight, eval_pctls ):
     delta_upper_sum = np.cumsum( delta_weights )
     delta_cdf_upper = user_cdf_at_delta_pts + delta_upper_sum
     delta_cdf_lower = user_cdf_at_delta_pts
-    delta_cdf_lower[1:] += delta_upper_sum
+    delta_cdf_lower[1:] += delta_upper_sum[:-1]
     
     # Loop over every evaluation quantile   
     for ipctl, pctl in enumerate( eval_pctls ):
 
         # Treatment for quantiles that lie within zone of delta jumps
-        mask = ( delta_cdf_lower <= pctl ) & ( pctl <= delta_cdf_upper )
-        flag_within_delta_jumps = np.sum(mask) > 1
+        mask = ( delta_cdf_lower <= pctl ) * ( pctl <= delta_cdf_upper )
+        flag_within_delta_jumps = np.sum(mask) > 0
         if flag_within_delta_jumps:
             ind = np.where(mask)[0][0]
             out_vals[ipctl] = delta_pts[ind]
@@ -499,12 +502,43 @@ def muwe_ppf( delta_pts, delta_weights, user_dist, user_weight, eval_pctls ):
     return out_vals
         
 
-        
+# Sanity checking muwe ppf
+def muwe_ppf_SANITY_CHECK():
 
+    import matplotlib.pyplot as plt
+    from scipy.stats import norm
+
+    # Setting up weighted emipirical distribution
+    delta_pts = np.arange(3) -1.
+    delta_weights = np.array((0.25,0.5, 0.25), dtype='f8') * 0.5
     
+    # Setting up user distribution
+    user_dist = norm(0,1)
+    user_weight = 0.5
 
+    # Evaluate CDF on dense locations
+    dense_eval_locs = np.linspace( -3,3, 1001 )
+
+    # Test evaluations of muwe ppf
+    pctl_vals = np.arange(10)/10. + 0.05
+    ppf_vals = muwe_ppf( delta_pts, delta_weights, user_dist, user_weight, pctl_vals )
+
+    # Evaluate MUWE CDF densely!
+    cdf_dense = muwe_cdf(delta_pts, delta_weights, user_dist, user_weight, dense_eval_locs)
+
+    # Plot CDF and ppf outcomes
+    plt.plot( cdf_dense, dense_eval_locs, '-r', label='Theoretical PPF', zorder=0)
+    plt.scatter( pctl_vals,ppf_vals, s=30, label='MUWE PPFs')
+    plt.xlabel('CDF')
+    plt.ylabel('x')
+
+    plt.legend()
+    plt.title('Sanity Checking muwe_ppf')
+    plt.savefig('SANITY_CHECK_muwe_ppf.png')
+    plt.close()
 
     return
+        
 
 
 
@@ -531,3 +565,4 @@ def muwe_ppf( delta_pts, delta_weights, user_dist, user_weight, eval_pctls ):
 if __name__ == '__main__':
     weighted_empirical_cdf_SANITY_CHECK()
     muwe_cdf_SANITY_CHECK()
+    muwe_ppf_SANITY_CHECK()
