@@ -188,34 +188,34 @@ from copy import deepcopy
 
 
 
-# '''
-#     FUNCTION TO EVALUATE CDF OF MIXTURE USER AND DELTA DISTRIBUTION
+'''
+    FUNCTION TO EVALUATE CDF OF MIXTURE USER AND WEIGHTED EMIRICAL DISTRIBUTION
 
-#     Inputs:
-#     1) delta_pts        -- Locations of delta functions (a sorted 1D NumPy array)
-#     2) delta_weights    -- Weights assigned to each delta function (1D NumPy array)
-#     3) user_dist        -- Fitted user-specified SciPy-like distribution instance
-#     4) user_weight      -- Weight assigned to the user distribution
-#     5) eval_pts         -- 1D NumPy array containing locations at which to evaluate CDF
+    Inputs:
+    1) delta_pts        -- Locations of delta functions (a sorted 1D NumPy array)
+    2) delta_weights    -- Weights assigned to each delta function (1D NumPy array)
+    3) user_dist        -- Fitted user-specified SciPy-like distribution instance
+    4) user_weight      -- Weight assigned to the user distribution
+    5) eval_pts         -- 1D NumPy array containing locations at which to evaluate CDF
 
-#     NOTE: sum of delta_weights and user_weight must be unity!
-# '''
-# def mud_delta_cdf( delta_pts, delta_weights, user_dist, user_weight, eval_pts ):
+    NOTE: sum of delta_weights and user_weight must be unity!
+'''
+def mud_delta_cdf( delta_pts, delta_weights, user_dist, user_weight, eval_pts ):
 
 
-#     # Delta distribution CDF contribution
-#     if len( delta_pts ) > 0:
+    # Delta distribution CDF contribution
+    if len( delta_pts ) > 0:
 
-#         # Separating 
+        # Separating 
 
-#         delta_cdf = np.searchsorted( eval_pts, delta_weights)
+        delta_cdf = np.searchsorted( eval_pts, delta_weights)
 
 
 
     
 
 
-#     return out_cdf
+    return out_cdf
 
 
 
