@@ -37,8 +37,8 @@
 
 import numpy as np
 from copy import deepcopy
-# from numba import njit
-# from numba import float64 as nb_f64
+from numba import njit
+from numba import float64 as nb_f64
 # from numba import float32 as nb_f32
 # from numba import int64 as nb_i64
 # from numba.types import Tuple as nb_tuple
@@ -322,9 +322,6 @@ def muwe_cdf_SANITY_CHECK():
 '''
 def weighted_empirical_cdf( delta_pts, delta_weights_normalized, eval_pts ):
 
-    # Init output array
-    out_cdf = np.empty_like( eval_pts)
-
     # Detect delta points that coincide with eval points
     vals, cnts = np.unique( eval_pts, return_counts=True)
     flag_delta = np.isin( delta_pts, vals )
@@ -335,9 +332,23 @@ def weighted_empirical_cdf( delta_pts, delta_weights_normalized, eval_pts ):
             delta_cnts[ipt] = cnts[ind]
     # --- End of detection
     
+    # Calculate CDF using an accelerated loop
+    out_cdf = weighted_empirical_cdf_loop_accel( delta_pts, delta_weights_normalized, eval_pts, delta_cnts )
+    
+    return out_cdf
 
-    # Looping over every evaluation point
+
+# Accelerating loop used in weighted_empirical_cdf_evaluator
+@njit( nb_f64[:]( nb_f64[:], nb_f64[:], nb_f64[:], nb_f64[:] ) )
+def weighted_empirical_cdf_loop_accel( delta_pts, delta_weights_normalized, eval_pts, delta_cnts ):
+
+    # Init useful counter
     delta_counter = np.zeros_like( delta_cnts )
+
+    # Init output array
+    out_cdf = np.empty_like( eval_pts)
+
+    # Loop!
     for ipt, pt in enumerate( eval_pts ):
 
         # Identify delta locations that this point is to the right of
@@ -362,6 +373,7 @@ def weighted_empirical_cdf( delta_pts, delta_weights_normalized, eval_pts ):
     # --- End of loop over all eval points
 
     return out_cdf
+
 
 
 # Sanity checker
@@ -426,9 +438,6 @@ def weighted_empirical_cdf_SANITY_CHECK():
 
 
 
-'''
-    FUNCTION TO COMPUTE PPF OF MUWE DISTRIBUTION
-'''
 
 
 
