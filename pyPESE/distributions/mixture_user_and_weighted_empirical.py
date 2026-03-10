@@ -38,7 +38,17 @@
 import numpy as np
 from copy import deepcopy
 from numba import njit
-from numba import float64 as nb_f64
+from numba import float64, float32
+
+
+
+'''
+    Define choice of precision
+'''
+nb_float = float64
+np_float = 'f8'
+
+
 
 
 
@@ -53,11 +63,18 @@ class mixture_user_weighted_empirical:
     name = 'generic mixture user + weighted empirical distribution'
 
     # Initialization
-    def __init__( self, delta_pts, delta_weights, user_dist_inst, user_weight):
-        self.delta_pts      = delta_pts
-        self.delta_weights  = delta_weights
+    def __init__( self, delta_pts, delta_weights, ens_size, user_dist_inst):
+        self.delta_pts      = np.array( delta_pts )
+        self.delta_weights  = np.array( delta_weights )
         self.user_dist      = user_dist_inst
-        self.user_weight    = 1. - np.sum(delta_weights)   
+        self.user_weight    = 1. - np.sum(delta_weights)
+        self.ens_size       = ens_size
+
+        # Exception handling
+        if user_dist_inst == None:
+            self.user_weight = 0.
+            self.delta_weights /= np.sum(self.delta_weights)
+            
         return  
 
     # Fit muwe distribution to 1d ensemble data
@@ -65,17 +82,26 @@ class mixture_user_weighted_empirical:
         
         # Identifying delta points and weights
         vals, cnt = np.unique( data1d, return_counts=True )
-        delta_pts = vals[ cnt>1 ]
-        delta_weights = cnt[cnt>1] * 1. / len(data1d)
+        delta_pts = np.array(vals[ cnt>1 ], dtype='f8')
+        delta_weights = np.array( cnt[cnt>1] * 1. / len(data1d), dtype='f8' )
 
-        # Determine user distribution parameters based on non-degen values
-        user_params = user_dist_class.fit( vals[cnt==1] )
+        # Only do user distribution fitting if there are at least 10 non-degenerate members
+        if np.sum( cnt[cnt==1] ) > 10:
 
-        # Generate instance of user distribution
-        user_dist_inst = user_dist_class(*user_params)
+            # Determine user distribution parameters based on non-degen values
+            user_params = user_dist_class.fit( vals[cnt==1] )
+
+            # Generate instance of user distribution
+            user_dist_inst = user_dist_class(*user_params)
+
+        # If not enough non-degenerate members, default to empirical distribution
+        else:
+            delta_pts = vals
+            delta_weights =  np.array( cnt * 1. / len(data1d), dtype='f8' )
+            user_dist_inst = None
 
         # Return parameters needed to initialize muwe instance
-        return delta_pts, delta_weights, user_dist_inst
+        return delta_pts, delta_weights, len(data1d), user_dist_inst
     
     # CDF function
     def cdf( self, eval_pts ):
@@ -99,6 +125,56 @@ class mixture_user_weighted_empirical:
         return samples1d.reshape(shape)
 
 # # ------------ End of definition for mixture_user_weighted_empirical distribution SciPy-like class
+
+
+
+'''
+    SANITY CHECK OF MUWE CLASS
+'''
+def SANITY_CHECK_muwe_class(user_weight = 0.5):
+
+    # Import handy libraries
+    import matplotlib.pyplot as plt
+    from scipy.stats import norm as norm_class
+    
+    # Generate data
+    ens_size = 20
+    num_norm_elements = int( ens_size * user_weight )
+    num_delt_elements = ens_size - num_norm_elements
+    ens1d = np.random.normal( size=ens_size)
+    ens1d[:num_delt_elements] = 0
+    print( ens1d )
+
+    # Fit to distribution
+    params = mixture_user_weighted_empirical.fit( ens1d, norm_class )
+    muwe_inst = mixture_user_weighted_empirical(*params)
+
+
+    # sparse evaluation pts
+    eval_pts = np.random.normal(size=20)
+    eval_pts[:5] = 0
+
+    # Dense eval pts
+    xvals = np.linspace(-3,3,1001)
+
+    # Evaluate CDF
+    eval_cdf = muwe_inst.cdf( eval_pts )
+    yvals = muwe_inst.cdf( xvals )
+
+    # Evaluate PPF function
+    quantiles = np.arange(15) / 15 + 1/30
+    ppf_out = muwe_inst.ppf( quantiles )
+
+    # Generate plots
+    plt.plot( xvals, yvals, color='darkgray', label = "Dense MUWE CDF evals", zorder=0)
+    # plt.scatter( eval_pts, eval_cdf, marker='o', c='k', s= 20, label = 'Sparse MUWE CDF evals' )
+    plt.scatter( ens1d, muwe_inst.cdf( ens1d ), marker='o', c='k', s= 20, label = 'Ensemble Members' )
+    plt.scatter( ppf_out, quantiles, marker = 'x', c = 'r', s= 20, label = 'MUWE PPF evals')
+    plt.title( 'MUWE class sanity check (user weight: %5.3f)' % user_weight)
+    plt.legend()
+    plt.savefig( 'SANITY_CHECK_muwe_class.png')
+
+    return
 
 
 
@@ -151,7 +227,7 @@ def muwe_cdf( delta_pts, delta_weights, user_dist, user_weight, eval_pts ):
     if np.sum(delta_weights) > 0:
 
         # Normalizing weights
-        delta_weights_normalized = delta_weights / np.sum(delta_weights)
+        delta_weights_normalized = np.array( delta_weights / np.sum(delta_weights), dtype='f8' )
 
         # Evaluate weighted empirical CDF
         delta_cdf = weighted_empirical_cdf( 
@@ -167,18 +243,18 @@ def muwe_cdf( delta_pts, delta_weights, user_dist, user_weight, eval_pts ):
 
 
 # Sanity check for MUWE CDF function
-def muwe_cdf_SANITY_CHECK():
+def muwe_cdf_SANITY_CHECK(user_weight = 0.5):
 
     import matplotlib.pyplot as plt
     from scipy.stats import norm
 
     # Setting up weighted emipirical distribution
     delta_pts = np.arange(3) -1.
-    delta_weights = np.array((0.25,0.5, 0.25), dtype='f8') * 0.5
+    delta_weights = np.array((0.25,0.5, 0.25), dtype='f8') * (1-user_weight)
     
     # Setting up user distribution
     user_dist = norm(0,1)
-    user_weight = 0.5
+    
 
     # Setting up evaluation locations
     eval_locs = np.zeros(20)
@@ -258,14 +334,17 @@ def weighted_empirical_cdf( delta_pts, delta_weights_normalized, eval_pts ):
     # --- End of detection
     
     # Calculate CDF using an eager compilation of the calculation loop
-    out_cdf = weighted_empirical_cdf_loop_njit_accel( delta_pts, delta_weights_normalized, eval_pts, delta_cnts )
+    out_cdf = weighted_empirical_cdf_loop_njit_accel( 
+        np.array(delta_pts, dtype=np_float), np.array(delta_weights_normalized, dtype=np_float), 
+        np.array(eval_pts, dtype=np_float), np.array(delta_cnts, dtype=np_float) 
+    )
     
     return out_cdf
 
 
 
-# Accelerating loop used in weighted_empirical_cdf_evaluator
-@njit( nb_f64[:]( nb_f64[:], nb_f64[:], nb_f64[:], nb_f64[:] ) )
+# Accelerating loop used in weighted_empirical_cdf
+@njit( nb_float[:]( nb_float[:], nb_float[:], nb_float[:], nb_float[:] ) )
 def weighted_empirical_cdf_loop_njit_accel( delta_pts, delta_weights_normalized, eval_pts, delta_cnts ):
 
     # Init useful counter
@@ -281,7 +360,8 @@ def weighted_empirical_cdf_loop_njit_accel( delta_pts, delta_weights_normalized,
         flag_right = pt > delta_pts
 
         # Evaluate CDF based on delta points to the left of pt
-        out_cdf[ipt] = np.sum( delta_weights_normalized[flag_right] )
+        tmp = np.sum( delta_weights_normalized[flag_right] )
+        out_cdf[ipt] = tmp
 
         # Special handling if point lies on delta function
         if pt in delta_pts:
@@ -415,11 +495,16 @@ def muwe_ppf( delta_pts, delta_weights, user_dist, user_weight, eval_pctls ):
             flag_larger_than_delta_upper = (pctl > delta_cdf_upper)
             pctl_delta_contribution = np.sum( delta_weights[flag_larger_than_delta_upper] )
 
-            # Map percentile to normalized user distribution
-            pctl_user_contribution = (pctl - pctl_delta_contribution)/user_weight
+            # Only ppf user distribution if user_weight exceeds 0
+            if user_weight > 0:
+                # Map percentile to normalized user distribution
+                pctl_user_contribution = (pctl - pctl_delta_contribution)/user_weight
 
-            # Invert user distribution
-            out_vals[ipctl] = user_dist.ppf( pctl_user_contribution)
+                # Invert user distribution
+                out_vals[ipctl] = user_dist.ppf( pctl_user_contribution)
+            
+            else:
+                out_vals[ipctl] = pctl_delta_contribution
         # --- End of treatment for values outside of delta jumps
     # --- End of loop over quantiles
 
@@ -428,18 +513,17 @@ def muwe_ppf( delta_pts, delta_weights, user_dist, user_weight, eval_pctls ):
         
 
 # Sanity checking muwe ppf
-def muwe_ppf_SANITY_CHECK():
+def muwe_ppf_SANITY_CHECK( user_weight = 0.5):
 
     import matplotlib.pyplot as plt
     from scipy.stats import norm
 
     # Setting up weighted emipirical distribution
     delta_pts = np.arange(3) -1.
-    delta_weights = np.array((0.25,0.5, 0.25), dtype='f8') * 0.5
+    delta_weights = np.array((0.25,0.5, 0.25), dtype='f8') * (1-user_weight)
     
     # Setting up user distribution
     user_dist = norm(0,1)
-    user_weight = 0.5
 
     # Evaluate CDF on dense locations
     dense_eval_locs = np.linspace( -3,3, 1001 )
@@ -501,22 +585,26 @@ def muwe_ppf_SANITY_CHECK():
 def muwe_ppf_fast( delta_pts, delta_weights, user_dist, user_weight, eval_pctls ):
 
     # Evaluate CDF upper and lower bounds corresponding to delta points
-    user_cdf_at_delta_pts = user_dist.cdf( delta_pts ) * user_weight
+    if user_weight > 0:
+        user_cdf_at_delta_pts = user_dist.cdf( delta_pts ) * user_weight
+    else:
+        user_cdf_at_delta_pts = np.zeros_like(delta_pts)
     delta_upper_sum = np.cumsum( delta_weights )
     delta_cdf_upper = user_cdf_at_delta_pts + delta_upper_sum
     delta_cdf_lower = user_cdf_at_delta_pts
     delta_cdf_lower[1:] += delta_upper_sum[:-1]
 
     # Apply JIT-accelerated loop calculation
-    user_weight_f64 = np.float64(user_weight)
     out2d = muwe_ppf_fast_loop_njit_accel( 
-        delta_pts, delta_weights, user_weight_f64, eval_pctls, delta_cdf_lower, delta_cdf_upper
+        np.array(delta_pts, dtype=np_float), np.array(delta_weights, dtype=np_float), nb_float(user_weight), 
+        np.array(eval_pctls, dtype=np_float), np.array(delta_cdf_lower, dtype=np_float), np.array(delta_cdf_upper, dtype=np_float)
         )
 
     # Parsing outcome of the JIT-accelerated loop calculations
     out_vals = out2d[:,0]
-    flag_user_ppf_eval = np.isnan(out_vals)
-    out_vals[flag_user_ppf_eval] = user_dist.ppf(out2d[:,1][flag_user_ppf_eval])
+    if user_weight > 0:
+        flag_user_ppf_eval = np.isnan(out_vals)
+        out_vals[flag_user_ppf_eval] = user_dist.ppf(out2d[:,1][flag_user_ppf_eval])
     
     return out_vals
 
@@ -524,7 +612,7 @@ def muwe_ppf_fast( delta_pts, delta_weights, user_dist, user_weight, eval_pctls 
 
 
 # Accelerated loop calculation
-@njit(  nb_f64[:,:]( nb_f64[:], nb_f64[:], nb_f64, nb_f64[:], nb_f64[:], nb_f64[:] ) )
+@njit(  nb_float[:,:]( nb_float[:], nb_float[:], nb_float, nb_float[:], nb_float[:], nb_float[:] ) )
 def muwe_ppf_fast_loop_njit_accel( delta_pts, delta_weights, user_weight, eval_pctls, delta_cdf_lower, delta_cdf_upper ):
 
     # Init 2D array to hold output values
@@ -551,7 +639,10 @@ def muwe_ppf_fast_loop_njit_accel( delta_pts, delta_weights, user_weight, eval_p
             pctl_delta_contribution = np.sum( delta_weights[flag_larger_than_delta_upper] )
 
             # Map percentile to normalized user distribution
-            out_arr2d[ipctl,1] = (pctl - pctl_delta_contribution)/user_weight
+            if user_weight > 0:
+                out_arr2d[ipctl,1] = (pctl - pctl_delta_contribution)/user_weight
+            else:
+                out_arr2d[ipctl,0] = pctl_delta_contribution
 
         # --- End of treatment for values outside of delta jumps
     # --- End of loop over quantiles
@@ -560,18 +651,17 @@ def muwe_ppf_fast_loop_njit_accel( delta_pts, delta_weights, user_weight, eval_p
 
 
 # Sanity checking fast muwe ppf
-def muwe_ppf_fast_SANITY_CHECK():
+def muwe_ppf_fast_SANITY_CHECK(user_weight = 0.5):
 
     import matplotlib.pyplot as plt
     from scipy.stats import norm
 
     # Setting up weighted emipirical distribution
     delta_pts = np.arange(3) -1.
-    delta_weights = np.array((0.25,0.5, 0.25), dtype='f8') * 0.5
+    delta_weights = np.array((0.25,0.5, 0.25), dtype='f8') * (1-user_weight)
     
     # Setting up user distribution
     user_dist = norm(0,1)
-    user_weight = 0.5
 
     # Evaluate CDF on dense locations
     dense_eval_locs = np.linspace( -3,3, 1001 )
@@ -618,7 +708,14 @@ def muwe_ppf_fast_SANITY_CHECK():
     SANITY CHECKS
 '''
 if __name__ == '__main__':
+    
+    user_wgt = 0.5
+
+    # Sanity checking functions used by muwe class
     weighted_empirical_cdf_SANITY_CHECK()
-    muwe_cdf_SANITY_CHECK()
-    muwe_ppf_SANITY_CHECK()
-    muwe_ppf_fast_SANITY_CHECK()
+    muwe_cdf_SANITY_CHECK( user_weight = user_wgt)
+    muwe_ppf_SANITY_CHECK( user_weight = user_wgt)
+    muwe_ppf_fast_SANITY_CHECK( user_weight = user_wgt)
+    
+    # Sanity check MUWE class
+    SANITY_CHECK_muwe_class(user_weight = user_wgt)

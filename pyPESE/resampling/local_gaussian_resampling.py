@@ -644,6 +644,73 @@ def SANITY_CHECK_compute_POOR_MAN_localized_gaussian_resampling_coefficients():
 
 
 
+'''
+    FUNCTION TO VERTICALLY CONVOLVE INPUTTED 2D NOISE ARRAY WITH GASPARI-COHN POLYNOMIAL
+    
+    This function applies the convolution onto the first dimension of the array.
+
+    Inputs:
+    -------
+    1) input_noise_2d (2D NumPy float64 array)
+            3D NumPy array containing noise samples for convolution
+            Dimensions: (vertical, other)
+    2) vert_coord_2d (2D NumPy float64 array)
+            2D NumPy array containing vertical coordinate value corresponding to 
+            every element in input_noise_32
+            Dimensions: (vertical, other)
+    3) vroi_in_vert_coord_units (2D NumPy float64 array)
+            3D NumPy array containing vertical radius of influence in terms of the
+            vertical coordinate units
+            Dimensions: (vertical, other)
+'''
+@njit( nbf64[:,:]( nbf64[:,:], nbf64[:,:], nbf64[:,:] )  )
+def vertical_convolve_2d_noise_GC99( input_noise_2d, vert_coord_2d, vroi_in_vert_coord_units2d ):
+
+    # Dimension determination
+    nlvl, n_other = input_noise_2d.shape
+
+    # Init array to hold finished product
+    convolved_noise_2d = np.empty_like(input_noise_2d)
+
+    # Init array to hold kernel weights
+    gc_weights_vert2d = np.zeros_like(input_noise_2d)
+
+    # Loop over locations
+    for ilvl in range(nlvl):
+            
+        # Absolute vertical distance
+        delta_z2d = np.abs( 
+            vert_coord_2d - vert_coord_2d[ilvl,:]
+        ) 
+
+        # Generate kernel weights
+        for iother in range(n_other):
+            gc_weights_vert2d[:,iother] = GC99( 
+                delta_z2d[:,iother], vroi_in_vert_coord_units2d[ilvl, iother]
+            )
+
+        # Convolve!
+        convolved_noise_2d[ilvl, :] = np.sum(
+            gc_weights_vert2d * input_noise_2d, axis=0
+        )
+    
+    # --- End of loop over levels
+
+    return convolved_noise_2d
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

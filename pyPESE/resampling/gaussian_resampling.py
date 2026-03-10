@@ -34,6 +34,69 @@ from numba import njit
 
 
 
+
+
+
+
+
+
+
+'''
+    FUNCTION TO RESAMPLE ENSEMBLE VIA FAST GAUSSIAN RESAMPLING USING PRE-CALCULATED E MATRIX
+
+    The expanded ensemble will have the same covariance matrix and mean vector as the original 
+    ensemble members.
+    This means that the resampling does not account for localization.
+
+    
+    Mandatory Inputs:
+    -----------------
+    1) ens2d ( variables x ens members )
+            2D NumPy array containing the ensemble members
+
+    2) coeff_matrix ( ens members x fcst+virt members )
+            Pre-calculated resampling coefficient matrix
+
+
+'''
+def fast_unlocalized_gaussian_resampling_with_precalculated_coeff_matrix( original_ens2d, coeff_matrix ):
+
+    # Determine number of variables and original ensemble size
+    num_variables, ens_size_original = original_ens2d.shape
+    
+    # Determine ensemble mean
+    ens_mean = np.mean( original_ens2d, axis=1 )
+
+    # Generate virtual members
+    original_perts2d = np.matrix( original_ens2d.T - ens_mean ).T
+    virtual_ens2d = np.array( original_perts2d * coeff_matrix )
+    virtual_ens2d[:,:] = (virtual_ens2d.T + ens_mean).T
+
+    return virtual_ens2d
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 '''
     FUNCTION TO RESAMPLE ENSEMBLE VIA FAST GAUSSIAN RESAMPLING
 
@@ -223,6 +286,61 @@ def compute_unlocalized_gaussian_resampling_coefficients( ens_size_original, ens
 
 
 
+
+
+'''
+    FUNCTION TO GENERATE UNLOCALIZED GAUSSIAN RESAMPLING COEFFICIENTS THAT GUARANTEES
+    COVARIANCE CONSERVATION USING PRE-COMPUTED NOISE SAMPLES
+
+    This function assumes that there is no need to localize the resampling procedure.
+    Results in the matrix E described in Chan et al 2020 MWR paper on BGEnKF.
+
+    Note that the resulting virtual members are not iid.
+
+    Mandatory Inputs:
+    -----------------
+    1) ens_size_original (scalar integer)
+            Original number of ensemble members
+
+    2) ens_size_virtual (scalar integer)
+            Number of virtual members to create
+
+    3) precomputed_noise (1D NumPy array with ens_size_original * ens_size_virtual elements)
+            Pre-computed noise samples
+    
+    Outputs:
+    --------
+    1) resampling_matrix ( ens_size_original x ens_size_virtual float matrix)
+            matrix of linear combination coefficients (matrix E in MWR paper)
+'''
+def compute_unlocalized_gaussian_resampling_coefficients_with_precomputed_noise( ens_size_original, ens_size_virtual, precomputed_noise ):
+
+    # Rename variables to use a different notation
+    N = ens_size_original
+    M = ens_size_virtual
+
+    # Reshaping pre-computed noise
+    W = ( precomputed_noise.flatten() ).reshape([N,M])
+
+    # Appendix B Step 2
+    W = np.matrix( (W.T - np.mean(W, axis=1)).T )
+
+    # Appendix B Step 3 and 4
+    C_W = W * W.T
+    inv_L_W = np.linalg.inv(np.linalg.cholesky( C_W ))
+    inv_L_W = np.matrix( inv_L_W )
+
+    # Appendix B Step 5
+    L_E = prep_transform_matrix_for_gaussian_coefficients( ens_size_original, ens_size_virtual )
+    k = np.sqrt( ( M+N-1. )/(N-1.) )
+    
+    # Appendix B Step 6
+    E_prime = L_E * inv_L_W * W
+
+    # Appendix B Step 7
+    resampling_matrix = E_prime + (k-1)/M
+
+    return np.matrix( resampling_matrix )
 
 
 

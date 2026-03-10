@@ -68,7 +68,11 @@ class bounded_boxcar_rank_histogram:
         return
 
     # Fit BBRH distirbution to 1d data
-    def fit( data1d, moment1, moment2, min_bound=-1e9, max_bound=1e9 ):
+    def fit( data1d, min_bound=-1e9, max_bound=1e9 ):
+
+        moment1 = np.mean( data1d)
+        moment2 = np.mean( data1d**2)
+
         # For each variable, fit BBRH distribution
         return BBRH_fit_dist_to_ens( 
                     data1d, moment1, moment2,
