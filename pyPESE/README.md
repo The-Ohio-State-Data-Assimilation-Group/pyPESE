@@ -1,13 +1,16 @@
 # pyPESE Package
 
-> Draft notice: this documentation was drafted by Codex and has not yet been
-> vetted by Man-Yau (Joseph) Chan.
+> This documentation was drafted by Codex and has been reviewed by Man-Yau
+> (Joseph) Chan. Note that this README file is still incomplete.
+>
+> If you have any questions or spot mistakes, please email Joseph at
+> chan.1063@osu.edu.
 
 This directory is the importable Python package for PESE methods. It is used by
 the model-specific workflows under `supported_models/` and can also be imported
 directly from custom scripts.
 
-## Core PESE-GC API
+## Core PESE-GC API (NOT USED FOR HIGH-ORDER MODELS LIKE CAM)
 
 ### `pese_gc`
 
