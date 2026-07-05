@@ -1,7 +1,10 @@
 # CAM-FV3 Workflows
 
-> Draft notice: this documentation was drafted by Codex and has not yet been
-> vetted by Man-Yau (Joseph) Chan.
+> Draft notice: this documentation was drafted by Codex and has been reviewed
+> by Man-Yau (Joseph) Chan.
+>
+> If you have any questions or spot any mistakes, please email Joseph at
+> chan.1063@osu.edu.
 
 This directory contains model-facing scripts for applying pyPESE to CAM-FV3
 netCDF ensemble files. The scripts are intended to be run from this directory
