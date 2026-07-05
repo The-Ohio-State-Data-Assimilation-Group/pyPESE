@@ -1,7 +1,10 @@
 # pyPESE
 
-> Draft notice: this documentation was drafted by Codex and has not yet been
-> vetted by Man-Yau (Joseph) Chan.
+> This documentation was drafted by Codex and has been reviewed by Man-Yau
+> (Joseph) Chan. Note that this README file is still incomplete.
+
+> If you have any questions or spot mistakes, please email Joseph at
+> chan.1063@osu.edu.
 
 Python implementations of Probit-space Ensemble Size Expansion (PESE) methods
 for generating virtual ensemble members. The repository contains two layers:
@@ -19,7 +22,7 @@ directly when building a custom workflow for another model or diagnostic.
 
 ```text
 pyPESE/
-  pese_gc.py                       Core PESE-GC interfaces
+  pese_gc.py                       DEPRECATED FILE.
   distributions/                   Marginal distribution classes
   resampling/                      Gaussian and localized resampling helpers
   ensemble_modulation/             Ensemble modulation utilities
@@ -44,7 +47,7 @@ The core package expects Python 3 plus:
 The examples and model workflows may also require:
 
 - `matplotlib` for `simple_demo_pyPESE.py`
-- `netCDF4` for CAM netCDF input/output
+- `netCDF4` for netCDF input/output
 - `mpi4py` and an MPI launcher such as `srun` or `mpiexec` for the CAM member
   generation scripts
 
@@ -54,10 +57,10 @@ package is normally used directly from a source checkout.
 
 ## Using The Package From Source
 
-From the repository root, Python can import `pyPESE` directly:
+From the repository root, Python can import `pyPESE` directly. For example
 
-```bash
-python simple_demo_pyPESE.py
+```python
+import pyPESE as pese
 ```
 
 From another working directory, add the repository root to `PYTHONPATH`:
@@ -70,31 +73,7 @@ python your_script.py
 An older workflow is to create a symbolic link to the `pyPESE/` package
 directory from the directory that contains your script.
 
-## Quick Package Example
 
-```python
-import numpy as np
-from scipy.stats import gamma, skewnorm
-
-from pyPESE.pese_gc import pese_gc
-
-original = np.random.normal(size=(2, 100))
-dist_classes = [gamma, skewnorm]
-extra_args = [
-    {"min bound": 0.0, "max bound": 1.0e9},
-    {"min bound": -1.0e9, "max bound": 1.0e9},
-]
-
-virtual, coeff_matrix = pese_gc(
-    original,
-    dist_classes,
-    extra_args,
-    num_virt_ens=1000,
-    rng_seed=0,
-)
-```
-
-For a fuller working example, see `simple_demo_pyPESE.py`.
 
 ## CAM Workflows
 
@@ -109,22 +88,6 @@ scripts to:
 The CAM scripts expect a `config_pyPESE.py` file in the CAM working directory.
 Create it by copying/adapting `supported_models/CAM/config_VERTLOC_pyPESE.py`.
 
-## Main Python Interfaces
-
-- `pyPESE.pese_gc.pese_gc(...)`: apply unlocalized PESE-GC to a 2D ensemble
-  array shaped `(num_variables, num_original_members)`.
-- `pyPESE.pese_gc.pese_gc_univariate(...)`: apply PESE-GC to one variable with
-  a precomputed Gaussian resampling matrix, useful for localized workflows.
-- `pyPESE.resampling.gaussian_resampling`: build and apply unlocalized Gaussian
-  resampling coefficient matrices.
-- `pyPESE.resampling.local_gaussian_resampling`: Gaspari-Cohn localization and
-  localized Gaussian resampling helpers.
-- `pyPESE.distributions.distributions.all_dist_class_dict`: short names for
-  bundled distribution classes, including `gauss`, `bbrh`, `muwe`, `expo`,
-  `gamma`, `pchip`, `beta`, `gamma_leftbound_zero`, and
-  `truncnorm_leftbound_zero`.
-- `pyPESE.ensemble_modulation.ensemble_modulation`: utilities for localization
-  matrix square roots and ensemble modulation.
 
 ## Notes And Limitations
 
