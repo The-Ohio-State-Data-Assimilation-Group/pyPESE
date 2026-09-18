@@ -134,18 +134,19 @@ def traditional_unlocalized_gaussian_sampling( orig_samples2d, num_virt_samples 
 
         # Generate white noise
         noise = np.random.normal( size=(Nx, num_virt_samples))
-        noise_cov = np.cov( white_noise, rowvar=True)
-        whitener_operator = np.linalg.inv( np.linalg.cholesky( white_noise_cov ) )
-        white_noise = np.matmult( whitener_operator, noise )
+        noise = (noise.T - np.mean(noise, axis=1)).T
+        noise_cov = np.cov( noise, rowvar=True)
+        whitener_operator = np.linalg.inv( np.linalg.cholesky( noise_cov ) )
+        white_noise = np.matmul( whitener_operator, noise )
 
         # Construct virtual samples
-        virt_samples2d = np.matmult( sqrt_orig_cov, white_noise )
+        virt_samples2d = np.matmul( sqrt_orig_cov, white_noise )
 
         # Rescaling to conserve expanded sample's covariance
         virt_samples2d *= np.sqrt( num_virt_samples/ (num_virt_samples-1) )
 
         # Handling mean state
-        virt_samples2d += np.mean( orig_samples2d, axis=1 )
+        virt_samples2d[:,:] = (virt_samples2d.T + np.mean( orig_samples2d, axis=1 ) ).T
 
         return virt_samples2d
 
@@ -159,7 +160,7 @@ def traditional_unlocalized_gaussian_sampling( orig_samples2d, num_virt_samples 
 '''
     Sanity check for generate_virtual_samples
 '''
-def SANITY_CHECK_generate_virtual_samples(Nx = 100, Ne = 3000):
+def SANITY_CHECK_generate_virtual_samples(Nx = 10, Ne = 100):
     
     # Generate original samples via harmonics with some noise
     white_noise = np.random.normal( size = (Nx, Ne) )
@@ -175,7 +176,7 @@ def SANITY_CHECK_generate_virtual_samples(Nx = 100, Ne = 3000):
     virt_samples2d = generate_virtual_samples( orig_samples2d, Nv, 'gauss')
 
     # Mean check
-    absdiff_mean = np.abs( np.mean(virt_samples2d, axis=0) - np.mean( orig_samples2d, axis=0) )
+    absdiff_mean = np.abs( np.mean(virt_samples2d, axis=1) - np.mean( orig_samples2d, axis=1) )
     print( 'Deviation of virtual mean from original mean' )
     print( np.sort( absdiff_mean)/np.std( orig_samples2d) )
 
