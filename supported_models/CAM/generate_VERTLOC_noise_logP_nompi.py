@@ -1,6 +1,6 @@
 '''
-    SCRIPT TO GENERATE VERTICAL NOISE SAMPLES USED IN AL-PESE-GC
-    =============================================================
+    SCRIPT TO GENERATE VERTICAL NOISE SAMPLES USED IN LOCAL PESE-GC
+    ===============================================================
     Written by: Man-Yau (Joseph) Chan
 
     IMPORTANT NOTES:
@@ -64,10 +64,10 @@
 
     Example usage with SLURM:
     -------------------------
-        python -u generate_localized_noise.py  40000  \
+        python -u generate_VERTLOC_noise_logP_nompi.py  4.00  \
             sample_camfile.nc  localized_noise.pkl
         
-        In this example, VROI is 40,000 Pa, the CAM file path is 
+        In this example, VROI is 4.00 lnP, the CAM file path is 
         sample_camfile.nc, and the output pickle file path is 
         localized_noise.pkl.
 
