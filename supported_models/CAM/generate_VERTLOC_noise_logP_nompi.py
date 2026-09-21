@@ -222,7 +222,10 @@ for i in range( coord_dict['nz_stag'] ):
     loc_matrix[i,:] = GC99( dist1d, vroi_in_logP )
 
 # Generate symmetric square-root of localization matrix 
-sqrt_loc_matrix = sqrtm( loc_matrix)
+if vroi_in_logP > 0:
+    sqrt_loc_matrix = sqrtm( loc_matrix)
+else:
+    sqrt_loc_matrix = np.ones_like( loc_matrix ) / np.sqrt(coord_dict['nz_stag'])
 
 # Generate vertically-localized noise
 noise2d = np.matmul( 
