@@ -81,7 +81,7 @@ ensemble_configuration = {
 '''
 
 # The following variable_configurations applies PESE-GC to ERA5 variables on pres lvls
-plvl_variable_configurations = {
+pres_lvls_variable_configurations = {
     'u'         :   {'marginal': 'gauss' },
     'v'         :   {'marginal': 'gauss' },
     't'         :   {'marginal': 'gauss' },
