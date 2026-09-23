@@ -1,6 +1,6 @@
 '''
-    SCRIPT TO GENERATE VERTICAL NOISE SAMPLES USED IN AL-PESE-GC
-    =============================================================
+    SCRIPT TO GENERATE VERTICAL NOISE SAMPLES USED IN LOCAL PESE-GC
+    ===============================================================
     Written by: Man-Yau (Joseph) Chan
 
     IMPORTANT NOTES:
@@ -64,10 +64,10 @@
 
     Example usage with SLURM:
     -------------------------
-        python -u generate_localized_noise.py  40000  \
+        python -u generate_VERTLOC_noise_logP_nompi.py  4.00  \
             sample_camfile.nc  localized_noise.pkl
         
-        In this example, VROI is 40,000 Pa, the CAM file path is 
+        In this example, VROI is 4.00 lnP, the CAM file path is 
         sample_camfile.nc, and the output pickle file path is 
         localized_noise.pkl.
 
@@ -222,7 +222,10 @@ for i in range( coord_dict['nz_stag'] ):
     loc_matrix[i,:] = GC99( dist1d, vroi_in_logP )
 
 # Generate symmetric square-root of localization matrix 
-sqrt_loc_matrix = sqrtm( loc_matrix)
+if vroi_in_logP > 0:
+    sqrt_loc_matrix = sqrtm( loc_matrix)
+else:
+    sqrt_loc_matrix = np.ones_like( loc_matrix ) / np.sqrt(coord_dict['nz_stag'])
 
 # Generate vertically-localized noise
 noise2d = np.matmul( 
