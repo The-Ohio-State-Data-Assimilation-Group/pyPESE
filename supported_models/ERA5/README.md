@@ -7,11 +7,15 @@ or from a CAM working directory that contains the same scripts, configuration,
 and input data layout.
 
 To use the scripts here, you will need the following python packages:
-`pyPESE`, `mpi4py`, `numpy`, `netCDF4`, `scipy`.
+`pyPESE`, `mpi4py`, `numpy`, `netCDF4`, `scipy`, `cdsapi`
 
 
 ## What The ERA5 Interface Currently Provides
 
+- `download_era5_ensemble_pres_lvls.py`: Download ERA5 ensemble members on pressure
+  levels from Climate Data Store.
+- `download_era5_ensemble_single_lvl.py`: Download ERA5 ensemble members on single
+  levels from Climate Data Store (e.g., 2m temperature)
 - `generate_unlocalized_virtual_members.py`: Generate virtual ERA5 members with
   the basic form of PESE-GC (i.e., no localization)
 - `config BPGC_pyPESE.py`: example configuration template.
