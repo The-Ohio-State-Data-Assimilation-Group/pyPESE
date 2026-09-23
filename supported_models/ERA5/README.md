@@ -7,7 +7,8 @@ or from a CAM working directory that contains the same scripts, configuration,
 and input data layout.
 
 To use the scripts here, you will need the following python packages:
-`pyPESE`, `mpi4py`, `numpy`, `netCDF4`, `scipy`, `cdsapi`
+`pyPESE`, `numpy`, `netCDF4`, `scipy`, `cdsapi`, `numba`
+
 
 
 ## What The ERA5 Interface Currently Provides

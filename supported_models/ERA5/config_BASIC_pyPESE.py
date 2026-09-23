@@ -29,8 +29,8 @@ ensemble_configuration = {
     # NetCDF file containing original ERA5 ensemble on pressure levels
     'original era5 pres lvl file name': 'example_data/era5_ensemble_plvls_2026-09-01_00UTC.nc',
 
-    # NetCDF file to hold EXPANDED ERA5 ensemble on pressure levels
-    'expanded era5 pres lvl file name': 'example_data/era5_expanded_ens_plvls_2026-09-01_00UTC.nc',
+    # NetCDF file to hold VIRTUAL ERA5 ensemble on pressure levels
+    'virtual era5 pres lvl file name': 'example_data/era5_virtual_ens_plvls_2026-09-01_00UTC.nc',
 
 
     # Apply PESE-GC on single level data?
@@ -39,8 +39,8 @@ ensemble_configuration = {
     # NetCDF file containing original ERA5 ensemble on single levels
     'original era5 single lvl file name': 'example_data/era5_ensemble_single_lvl_2026-09-01_00UTC.nc',
 
-    # NetCDF file containing EXPANDED ERA5 ensemble on single levels
-    'expanded era5 single lvl file name': 'example_data/era5_expanded_ens_single_lvl_2026-09-01_00UTC.nc',
+    # NetCDF file containing VIRTUAL ERA5 ensemble on single levels
+    'virtual era5 single lvl file name': 'example_data/era5_virtual_ens_single_lvl_2026-09-01_00UTC.nc',
     
 }
 
