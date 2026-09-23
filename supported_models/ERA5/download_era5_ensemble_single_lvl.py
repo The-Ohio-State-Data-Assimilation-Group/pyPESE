@@ -14,7 +14,7 @@ min_lat=float( sys.argv[3] )
 max_lon=float( sys.argv[4] )
 min_lon=float( sys.argv[5] )
 
-outname = 'example_data/era5_single_lvl_' + date.strftime('%Y-%m-%d_%H')+'UTC.nc'
+outname = 'example_data/era5_ensemble_single_lvl_' + date.strftime('%Y-%m-%d_%H')+'UTC.nc'
 
 c = cdsapi.Client()
 
