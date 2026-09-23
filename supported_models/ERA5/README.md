@@ -1,30 +1,23 @@
-# CAM-FV3 Workflows
+# PESE-GC for ERA5 Ensemble
 
-> Draft notice: this documentation was drafted by Codex and has been reviewed
-> by Man-Yau (Joseph) Chan.
->
-> If you have any questions or spot any mistakes, please email Joseph at
-> chan.1063@osu.edu.
 
 This directory contains model-facing scripts for applying pyPESE to ERA5
 netCDF ensemble files. The scripts are intended to be run from this directory
 or from a CAM working directory that contains the same scripts, configuration,
 and input data layout.
 
-## What The CAM Interface Provides
+To use the scripts here, you will need the following python packages:
+`pyPESE`, `mpi4py`, `numpy`, `netCDF4`, `scipy`.
 
-- `generate_VERTLOC_noise_logP_nompi.py`: generate vertically localized Gaussian
-  noise samples in log-pressure coordinates for localized PESE-GC.
-- `generate_VERTLOC_virtual_members.py`: generate vertically localized CAM
-  virtual members with PESE-GC.
-- `generate_logP_vertical_loc_sqrt_matrix.py`: generate a truncated square-root
-  vertical localization matrix for ensemble modulation.
-- `generate_vertically_modulated_members_Q_CLAMP.py`: generate vertically
-  modulated CAM members. The script also imports the CAM cloud helper and
-  contains Q-specific clamping behavior.
-- `check_VERTLOC_noise_logP.py`: inspect generated vertical localization noise.
-- `config_VERTLOC_pyPESE.py`: example configuration template.
-- `example_data/`: small CAM member files for local testing and examples.
+
+## What The ERA5 Interface Currently Provides
+
+- `generate_unlocalized_virtual_members.py`: Generate virtual ERA5 members with
+  the basic form of PESE-GC (i.e., no localization)
+- `config BPGC_pyPESE.py`: example configuration template.
+- `example_data/`: small ERA5 member files for local testing and examples.
+
+
 
 ## Configuration File
 
