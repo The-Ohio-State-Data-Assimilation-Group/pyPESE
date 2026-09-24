@@ -333,18 +333,6 @@ for typekey in ['pres', 'single']:
                     std_norm_dist.cdf( virt_probit1d )
                 )
                 virt_ens1d = virt_ens1d.astype('f8')
-
-                # Sanity check:
-                if user_dist_name == 'gauss':
-                    print(vname)
-                    expd_ens = np.zeros( fcst_ens_size + virt_ens_size)
-                    expd_ens[:fcst_ens_size] = fcst_ens1d
-                    expd_ens[fcst_ens_size:] = virt_ens1d
-                    print( 1-np.mean(expd_ens) / np.mean(fcst_ens1d))
-                    print( 1-np.std(expd_ens, ddof=1) / np.std(fcst_ens1d, ddof=1))
-                    if ix == 10:
-                        quit()
-                
                 
 
                 # Checking for strange values
