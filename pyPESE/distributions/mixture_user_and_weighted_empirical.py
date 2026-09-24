@@ -85,8 +85,8 @@ class mixture_user_weighted_empirical:
         delta_pts = np.array(vals[ cnt>1 ], dtype='f8')
         delta_weights = np.array( cnt[cnt>1] * 1. / len(data1d), dtype='f8' )
 
-        # Only do user distribution fitting if there are at least 10 non-degenerate members
-        if np.sum( cnt[cnt==1] ) > 10:
+        # Only do user distribution fitting if there are at least 3 non-degenerate members
+        if np.sum( cnt[cnt==1] ) >= 3:
 
             # Determine user distribution parameters based on non-degen values
             user_params = user_dist_class.fit( vals[cnt==1] )
