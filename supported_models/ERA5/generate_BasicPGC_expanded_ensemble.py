@@ -374,11 +374,6 @@ for typekey in ['pres', 'single']:
             ), -1, ens_dim_id
         )
 
-        # quick check
-        print( np.mean( virt_vble_data[:,0,10,10,10], axis=0 ) )
-        print( np.mean( np.swapaxes(vble_data, 0,-1)[:,0,10,10,10], axis=0 ) )
-        quit()
-
         # Hold onto virtual ensemble
         virt_ens_dict[f'{tkey}lvl variables'][vname]['data'] = deepcopy(virt_vble_data)
 
