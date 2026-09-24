@@ -155,46 +155,48 @@ timed_print("Loading original ERA5 members.")
 # Load original ensemble data
 for typekey in ['pres','single']:
     tkey = typekey[0]
-    if ens_config_dict[f'expand {typekey} lvl data?']:
 
-        orig_ens_dict[f'{tkey}lvl variables'] = {}
+    # Skip if we dont want this kind of data.
+    if not ens_config_dict[f'expand {typekey} lvl data?']:
+        continue
 
-        timed_print(f'    Loading original ERA5 ensemble members {typekey} level data.')
+    orig_ens_dict[f'{tkey}lvl variables'] = {}
 
-        orig_ens_dict[f'{tkey}lvl vnames'] = []
+    timed_print(f'    Loading original ERA5 ensemble members {typekey} level data.')
+
+    orig_ens_dict[f'{tkey}lvl vnames'] = []
+    
+    f = ncopen( ens_config_dict[f'original era5 {typekey} lvl file name'], 'r' )
+
+    # Load all variables
+    for vname in f.variables.keys():
+
+        # Skipping failure mode
+        if vname == 'expver':
+            continue
+
+        # Register variable name
+        orig_ens_dict[f'{tkey}lvl vnames'].append( vname )
+
+        # Load variable
+        orig_ens_dict[f'{tkey}lvl variables'][vname] = {}
+        orig_ens_dict[f'{tkey}lvl variables'][vname]['attributes'] = deepcopy(
+            f.variables[vname].__dict__
+        )
+        orig_ens_dict[f'{tkey}lvl variables'][vname]['dimensions'] = deepcopy(
+            f.variables[vname].dimensions
+        )
         
-        f = ncopen( ens_config_dict[f'original era5 {typekey} lvl file name'], 'r' )
+        orig_ens_dict[f'{tkey}lvl variables'][vname]['data'] = np.array(
+            f.variables[vname]
+        )
 
-        # Load all variables
-        for vname in f.variables.keys():
+    # Load all global attributes
+    orig_ens_dict[f'{tkey}lvl attributes'] = deepcopy( f.__dict__ )
 
-            # Skipping failure mode
-            if vname == 'expver':
-                continue
+    # Close file to release handle
+    f.close()
 
-            # Register variable name
-            orig_ens_dict[f'{tkey}lvl vnames'].append( vname )
-
-            # Load variable
-            orig_ens_dict[f'{tkey}lvl variables'][vname] = {}
-            orig_ens_dict[f'{tkey}lvl variables'][vname]['attributes'] = deepcopy(
-                f.variables[vname].__dict__
-            )
-            orig_ens_dict[f'{tkey}lvl variables'][vname]['dimensions'] = deepcopy(
-                f.variables[vname].dimensions
-            )
-            
-            orig_ens_dict[f'{tkey}lvl variables'][vname]['data'] = np.array(
-                f.variables[vname]
-            )
-
-        # Load all global attributes
-        orig_ens_dict[f'{tkey}lvl attributes'] = deepcopy( f.__dict__ )
-
-        # Close file to release handle
-        f.close()
-
-    # --- End of procedure to load data
 # --- End of loop over single and pressure level data.
 
 
@@ -316,9 +318,17 @@ for typekey in ['pres', 'single']:
                 )
 
                 # Step 2: Transform to probit space
+                print( user_dist_name)
                 fcst_probit1d = std_norm_dist.ppf(
                     fitted_dist.cdf( fcst_ens1d )
                 )
+                print( np.sort( fcst_ens1d ) - np.mean( fcst_ens1d) )
+                print(np.sort(fitted_dist.cdf( fcst_ens1d )))
+                print( np.sort( np.abs(fcst_probit1d)) )
+                print( np.mean( fcst_probit1d) )
+                print( np.std( fcst_probit1d, ddof=1))
+                quit()
+
 
                 # Step 3: Resample in probit space
                 fcst_probit1d -= np.mean( fcst_probit1d)
@@ -326,11 +336,34 @@ for typekey in ['pres', 'single']:
                 virt_probit1d = np.matmul( fcst_probit1d[np.newaxis,:], E_matrix )
                 virt_probit1d = np.array(virt_probit1d)[0,:]
 
+                print( np.std(fcst_probit1d, ddof=1) )
+                expd_probits = np.zeros( fcst_ens_size + virt_ens_size )
+                expd_probits[:fcst_ens_size] = fcst_probit1d
+                expd_probits[fcst_ens_size:] = virt_probit1d
+                print( np.mean(expd_probits) )
+                print( np.std(expd_probits, ddof=1) )
+
+                # quit()
+
                 # Step 4: Transform from probit space to native space
                 virt_ens1d = fitted_dist.ppf(
                     std_norm_dist.cdf( virt_probit1d )
                 )
                 virt_ens1d = virt_ens1d.astype('f8')
+
+                # Sanity check:
+                if user_dist_name == 'gauss':
+                    print(vname)
+                    expd_ens = np.zeros( fcst_ens_size + virt_ens_size)
+                    expd_ens[:fcst_ens_size] = fcst_ens1d
+                    expd_ens[fcst_ens_size:] = virt_ens1d
+                    print( expd_ens )
+                    print( np.mean(expd_ens) , np.mean(fcst_ens1d))
+                    print( np.std(expd_ens, ddof=1) , np.std(fcst_ens1d, ddof=1))
+                    if ix == 10:
+                        quit()
+                
+                
 
                 # Checking for strange values
                 if np.sum( np.isnan( virt_ens1d) + np.isinf(virt_ens1d) ) > 0:
