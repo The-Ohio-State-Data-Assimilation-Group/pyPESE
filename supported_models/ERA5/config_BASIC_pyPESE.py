@@ -85,9 +85,9 @@ pres_lvls_variable_configurations = {
     'u'         :   {'marginal': 'gauss' },
     'v'         :   {'marginal': 'gauss' },
     't'         :   {'marginal': 'gauss' },
-    'q'         :   {'marginal': 'gamma_leftbound_zero' },
-    'ciwc'      :   {'marginal': 'gamma_leftbound_zero' },
-    'clwc'      :   {'marginal': 'gamma_leftbound_zero' },
+    'q'         :   {'marginal': 'truncnorm_leftbound_zero' },
+    'ciwc'      :   {'marginal': 'truncnorm_leftbound_zero' },
+    'clwc'      :   {'marginal': 'truncnorm_leftbound_zero' },
 }
 
 
@@ -101,4 +101,5 @@ single_lvl_variable_configurations = {
     'd2m'       :   {'marginal': 'gauss' },
     'sp'        :   {'marginal': 'gauss' },
     'skt'       :   {'marginal': 'gauss' },
+    'msl'       :   {'marginal': 'gauss' },
 }

@@ -104,6 +104,8 @@ for typekey in typekey_list:
         
 
 
+
+
 '''
     Checking mean and variances for variables with gaussian distributions
     (Note: PESE-GC is guaranteed to conserve the means and covariances of gaussians)
@@ -161,3 +163,7 @@ for typekey in typekey_list:
         
     # --- End of loop over variables
 # --- End of loop over type keys.
+
+
+
+
