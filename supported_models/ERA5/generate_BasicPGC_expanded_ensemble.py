@@ -296,7 +296,7 @@ for typekey in ['pres', 'single']:
 
 
         # Purrform PESE-GC
-        for ix in range( vble_data.shape[0] ):
+        for ix in range( fcst_vble_data.shape[0] ):
 
             fcst_ens1d = fcst_vble_data[ix,:]
 
@@ -362,15 +362,22 @@ for typekey in ['pres', 'single']:
 
             # Put 1d data into virtual array
             virt_vble_data[ix,:] = virt_ens1d
-
+            
         # --- End of loop over available elements
 
         # Undo dimension manipulations on virtual data
         virt_dims = list( spatial_dims )
         virt_dims.append( virt_ens_size )
         virt_vble_data = np.swapaxes(
-            virt_vble_data.reshape( virt_dims ), -1, ens_dim_id
+            virt_vble_data.reshape( 
+                virt_dims
+            ), -1, ens_dim_id
         )
+
+        # quick check
+        print( np.mean( virt_vble_data[:,0,10,10,10], axis=0 ) )
+        print( np.mean( np.swapaxes(vble_data, 0,-1)[:,0,10,10,10], axis=0 ) )
+        quit()
 
         # Hold onto virtual ensemble
         virt_ens_dict[f'{tkey}lvl variables'][vname]['data'] = deepcopy(virt_vble_data)
