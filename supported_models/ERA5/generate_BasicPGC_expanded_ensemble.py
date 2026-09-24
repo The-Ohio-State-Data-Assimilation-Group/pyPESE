@@ -186,8 +186,6 @@ if ens_config_dict['expand pres lvl data?']:
         orig_ens_dict['plvl variables'][vname]['dimensions'] = deepcopy(
             f.variables[vname].dimensions
         )
-        print( vname )
-        print(orig_ens_dict['plvl variables'][vname]['dimensions'])
         
         orig_ens_dict['plvl variables'][vname]['data'] = np.array(
             f.variables[vname]
@@ -295,22 +293,32 @@ for typekey in ['pres', 'single']:
     # Loop over available variables
     for vname in orig_ens_dict[f'{tkey}lvl variables']:
 
-        timed_print(f'Applying PESE-GC onto {typekey} variables...')
-
-        # Duplicate 
+        # Duplicate variable properties 
         virt_ens_dict[f'{tkey}lvl variables'][vname] = deepcopy(
-                orig_ens_dict[f'{tkey}lvl variables'][vname]
+            orig_ens_dict[f'{tkey}lvl variables'][vname]
         )
 
-        # Skip over variables that are 1D or 0D
+        # Duplicate variables that are 1D or 0D -- these are constant fields
         if orig_ens_dict[f'{tkey}lvl variables'][vname]['data'].ndim <= 2:
-            continue
 
-        timed_print(f'... applying PESE-GC onto {typekey} variable {vname}.')
+            # Special treatment for number variable
+            if vname == 'number':
+                virt_ens_dict[f'{tkey}lvl variables'][vname]['data'] = (
+                    np.arange( virt_ens_size ) + fcst_ens_size
+                )
+            # --- End of special treatment
+
+            continue
 
         # Skip over variables with no corresponding resampling configs
         if vname not in vbl_config_dict:
+            _ = virt_ens_dict[f'{tkey}lvl variables'].pop(vname, None) 
             continue
+
+        # User-specified marginal distribution family for current variable.
+        user_dist_name = vbl_config_dict[vname]['marginal']
+
+        timed_print(f'... applying PESE-GC onto {typekey} variable {vname} (dist: {user_dist_name}).')
 
         # Detect dimension corresponding to the ensemble member id
         dim_list = list( orig_ens_dict[f'{tkey}lvl variables'][vname]['dimensions'] )
@@ -337,7 +345,7 @@ for typekey in ['pres', 'single']:
         # Purrform PESE-GC
         for ix in range( vble_data.shape[0] ):
 
-            fcst_ens1d = vble_data[ix,:]
+            fcst_ens1d = fcst_vble_data[ix,:]
 
             # Only execute PESE-GC if the ensemble is not entirely degenerate
             if np.abs( fcst_ens1d.max() - fcst_ens1d.min() ) > 1e-7:
@@ -404,7 +412,8 @@ for typekey in ['pres', 'single']:
         # --- End of loop over available elements
 
         # Undo dimension manipulations on virtual data
-        virt_dims = list( spatial_dims ).append( virt_ens_size )
+        virt_dims = list( spatial_dims )
+        virt_dims.append( virt_ens_size )
         virt_vble_data = np.swapaxes(
             virt_vble_data.reshape( virt_dims ), -1, ens_dim_id
         )
@@ -442,7 +451,7 @@ for typekey in ['pres', 'single']:
     if not ens_config_dict[f'expand {typekey} lvl data?']:
         continue
 
-    timed_print(f'Writing virtual ERA5 ensemble {typekey} lvl data to file.')
+    timed_print(f'Writing virtual ERA5 ensemble {typekey} lvl data to file...')
 
     # Init virtual ensemble file
     out_fname = ens_config_dict[f'virtual era5 {typekey} lvl file name']
@@ -471,16 +480,23 @@ for typekey in ['pres', 'single']:
     virt_ncfile.createDimension('number', virt_ens_size)
 
     # Save virtual members into netcdf file
-    for name, variable in fcst_ncfile.variables.items():
+    for name, variable in orig_ncfile.variables.items():
+
+        # Skipping over variables not recorded in virt_ens_dict
+        if name not in virt_ens_dict[f'{tkey}lvl variables']:
+            continue
+
+        timed_print(f'... writing {name}')
 
         # Init variable.
         x = virt_ncfile.createVariable(
             name, variable.datatype, variable.dimensions
         )
+        x.setncatts({k: variable.getncattr(k) for k in variable.ncattrs()})
+
         virt_ncfile[name][:] = (
             virt_ens_dict[f'{tkey}lvl variables'][name]['data'][:] 
         )
-        x.setncatts({k: variable.getncattr(k) for k in variable.ncattrs()})
     
     # --- End of loop over variables
 
@@ -493,7 +509,6 @@ for typekey in ['pres', 'single']:
     timed_print(f'Finished writing virtual ERA5 ensemble {typekey} lvl data to file.\n')
 
 # --- End of loop over data types
-timed_print()
 
 
 

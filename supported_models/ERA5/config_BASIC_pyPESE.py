@@ -20,7 +20,7 @@ ensemble_configuration = {
 
     # Number of ensemble members after applying ERA5-pyPESE
     #       Must be at least 3x the original ensemble size
-    'expanded ensemble size': 80,
+    'expanded ensemble size': 40,
 
 
     # Apply PESE-GC on pressure level data?
