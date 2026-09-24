@@ -318,32 +318,15 @@ for typekey in ['pres', 'single']:
                 )
 
                 # Step 2: Transform to probit space
-                print( user_dist_name)
                 fcst_probit1d = std_norm_dist.ppf(
                     fitted_dist.cdf( fcst_ens1d )
                 )
-                print( np.sort( fcst_ens1d ) - np.mean( fcst_ens1d) )
-                print(np.sort(fitted_dist.cdf( fcst_ens1d )))
-                print( np.sort( np.abs(fcst_probit1d)) )
-                print( np.mean( fcst_probit1d) )
-                print( np.std( fcst_probit1d, ddof=1))
-                quit()
-
 
                 # Step 3: Resample in probit space
                 fcst_probit1d -= np.mean( fcst_probit1d)
                 fcst_probit1d /= np.std( fcst_probit1d, ddof=1)                   
                 virt_probit1d = np.matmul( fcst_probit1d[np.newaxis,:], E_matrix )
                 virt_probit1d = np.array(virt_probit1d)[0,:]
-
-                print( np.std(fcst_probit1d, ddof=1) )
-                expd_probits = np.zeros( fcst_ens_size + virt_ens_size )
-                expd_probits[:fcst_ens_size] = fcst_probit1d
-                expd_probits[fcst_ens_size:] = virt_probit1d
-                print( np.mean(expd_probits) )
-                print( np.std(expd_probits, ddof=1) )
-
-                # quit()
 
                 # Step 4: Transform from probit space to native space
                 virt_ens1d = fitted_dist.ppf(
@@ -357,9 +340,8 @@ for typekey in ['pres', 'single']:
                     expd_ens = np.zeros( fcst_ens_size + virt_ens_size)
                     expd_ens[:fcst_ens_size] = fcst_ens1d
                     expd_ens[fcst_ens_size:] = virt_ens1d
-                    print( expd_ens )
-                    print( np.mean(expd_ens) , np.mean(fcst_ens1d))
-                    print( np.std(expd_ens, ddof=1) , np.std(fcst_ens1d, ddof=1))
+                    print( 1-np.mean(expd_ens) / np.mean(fcst_ens1d))
+                    print( 1-np.std(expd_ens, ddof=1) / np.std(fcst_ens1d, ddof=1))
                     if ix == 10:
                         quit()
                 
