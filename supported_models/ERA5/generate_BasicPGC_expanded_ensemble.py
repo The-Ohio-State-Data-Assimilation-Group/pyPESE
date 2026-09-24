@@ -56,12 +56,9 @@ def timed_print( string ):
 import numpy as np
 from sys import argv
 from copy import deepcopy
-from math import ceil as ceiling
-from scipy.ndimage import convolve as scipy_convolve
 import pickle
 from os.path import isfile
 from gc import collect as gc_collect
-from shutil import copyfile as shutil_copyfile
 
 # Import netCDF package
 from netCDF4 import Dataset as ncopen
@@ -70,11 +67,9 @@ timed_print('Finished loading standard packages.\n')
 
 
 # Import useful parts of PyPESE package
-from pyPESE.resampling.gaussian_resampling import fast_unlocalized_gaussian_resampling_with_precalculated_coeff_matrix 
 from pyPESE.resampling.gaussian_resampling import compute_unlocalized_gaussian_resampling_coefficients_with_precomputed_noise
 from pyPESE.distributions.distributions import all_dist_class_dict
 from pyPESE.distributions.gaussian import STANDARD_NORMAL_INSTANCE as std_norm_dist
-from pyPESE.balance_diagnosis.add_simple_cloud import add_cloud_to_camfile
 timed_print('Finished compiling and importing pyPESE package.\n')
 
 
@@ -157,94 +152,50 @@ timed_print("Loading original ERA5 members.")
 
 
 
-# Load original ensemble pressure level data data
-if ens_config_dict['expand pres lvl data?']:
+# Load original ensemble data
+for typekey in ['pres','single']:
+    tkey = typekey[0]
+    if ens_config_dict[f'expand {typekey} lvl data?']:
 
-    orig_ens_dict['plvl variables'] = {}
+        orig_ens_dict[f'{tkey}lvl variables'] = {}
 
-    timed_print('    Loading original ERA5 ensemble members pressure level data.')
+        timed_print(f'    Loading original ERA5 ensemble members {typekey} level data.')
 
-    orig_ens_dict['plvl vnames'] = []
-    
-    f = ncopen( ens_config_dict['original era5 pres lvl file name'], 'r' )
-
-    # Load all variables
-    for vname in f.variables.keys():
-
-        # Skipping failure mode
-        if vname == 'expver':
-            continue
-
-        # Register variable name
-        orig_ens_dict['plvl vnames'].append( vname )
-
-        # Load variable
-        orig_ens_dict['plvl variables'][vname] = {}
-        orig_ens_dict['plvl variables'][vname]['attributes'] = deepcopy(
-            f.variables[vname].__dict__
-        )
-        orig_ens_dict['plvl variables'][vname]['dimensions'] = deepcopy(
-            f.variables[vname].dimensions
-        )
+        orig_ens_dict[f'{tkey}lvl vnames'] = []
         
-        orig_ens_dict['plvl variables'][vname]['data'] = np.array(
-            f.variables[vname]
-        )
+        f = ncopen( ens_config_dict[f'original era5 {typekey} lvl file name'], 'r' )
 
-    # Load all global attributes
-    orig_ens_dict['plvl attributes'] = deepcopy( f.__dict__ )
+        # Load all variables
+        for vname in f.variables.keys():
 
-    # Close file to release handle
-    f.close()
+            # Skipping failure mode
+            if vname == 'expver':
+                continue
 
-# --- End of procedure to load pressure level data
+            # Register variable name
+            orig_ens_dict[f'{tkey}lvl vnames'].append( vname )
 
+            # Load variable
+            orig_ens_dict[f'{tkey}lvl variables'][vname] = {}
+            orig_ens_dict[f'{tkey}lvl variables'][vname]['attributes'] = deepcopy(
+                f.variables[vname].__dict__
+            )
+            orig_ens_dict[f'{tkey}lvl variables'][vname]['dimensions'] = deepcopy(
+                f.variables[vname].dimensions
+            )
+            
+            orig_ens_dict[f'{tkey}lvl variables'][vname]['data'] = np.array(
+                f.variables[vname]
+            )
 
+        # Load all global attributes
+        orig_ens_dict[f'{tkey}lvl attributes'] = deepcopy( f.__dict__ )
 
+        # Close file to release handle
+        f.close()
 
-
-
-
-# Load original ensemble single level data data
-if ens_config_dict['expand single lvl data?']:
-
-    orig_ens_dict['slvl variables'] = {}
-
-    timed_print('    Loading original ERA5 ensemble members single level data.')
-
-    orig_ens_dict['slvl vnames'] = []
-    
-    f = ncopen( ens_config_dict['original era5 single lvl file name'], 'r' )
-
-    # Load all variables
-    for vname in f.variables.keys():
-
-        # Skipping failure mode
-        if vname == 'expver':
-            continue
-
-        # Register variable name
-        orig_ens_dict['slvl vnames'].append( vname )
-
-        # Load variable
-        orig_ens_dict['slvl variables'][vname] = {}
-        orig_ens_dict['slvl variables'][vname]['attributes'] = deepcopy(
-            f.variables[vname].__dict__
-        )
-        orig_ens_dict['slvl variables'][vname]['dimensions'] = deepcopy(
-            f.variables[vname].dimensions
-        )
-        orig_ens_dict['slvl variables'][vname]['data'] = np.array(
-            f.variables[vname]
-        )
-
-    # Load all global attributes
-    orig_ens_dict['slvl attributes'] = deepcopy( f.__dict__ )
-
-    # Close file to release handle
-    f.close()
-
-# --- End of procedure to load single level data
+    # --- End of procedure to load data
+# --- End of loop over single and pressure level data.
 
 
 timed_print('Finished loading original ERA5 members.\n')
