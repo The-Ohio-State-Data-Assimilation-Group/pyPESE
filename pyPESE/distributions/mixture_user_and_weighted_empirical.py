@@ -105,7 +105,10 @@ class mixture_user_weighted_empirical:
     
     # CDF function
     def cdf( self, eval_pts ):
-        return muwe_cdf( self.delta_pts, self.delta_weights, self.user_dist, self.user_weight, eval_pts )
+        cdf_vals = muwe_cdf( self.delta_pts, self.delta_weights, self.user_dist, self.user_weight, eval_pts )
+        cdf_vals[ cdf_vals > 1-1e-6] = 1-1e-6
+        cdf_vals[ cdf_vals < 1e-6] = 1e-6
+        return cdf_vals
     
     # PPF function
     def ppf( self, eval_cdf ):
